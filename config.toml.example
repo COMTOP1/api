@@ -1,0 +1,30 @@
+[server]
+    api_debug = false
+    api_port = ":0"
+    api_domain_name = ""
+    api_version = ""
+    api_commit = ""
+    [access]
+        api_access_cookie_name = ""
+        api_signing_token = ""
+    [admin]
+        api_admin_access_cookie_name = ""
+        api_admin_key_0 = ""
+        api_admin_key_1 = ""
+        api_admin_key_2 = ""
+        api_admin_key_3 = ""
+        api_admin_totp = ""
+        api_admin_url = ""
+
+[database]
+    api_db_host = ""
+    api_db_bucket = ""
+    api_db_user = ""
+    api_db_pass = ""
+    api_db_sslmode = "" # disable or enable
+
+[mail]
+    api_mail_host = ""
+    api_mail_user = ""
+    api_mail_pass = ""
+    api_mail_port = 0
