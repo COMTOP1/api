@@ -76,11 +76,11 @@ func (r *Repo) GetJWT(c echo.Context) error {
 	tokenString, err := token.SignedString([]byte(r.signingToken))
 	if err != nil {
 		err = fmt.Errorf("GetJWT failed: %w", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
 	err = json.NewEncoder(c.Response().Writer).Encode(JWTToken{JWTToken: tokenString})
 	if err != nil {
-		return err
+        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
 	return c.JSON(http.StatusOK, nil)
 }
@@ -99,11 +99,11 @@ func (r *Repo) GetSSOJWT(c echo.Context) error {
 	tokenString, err := token.SignedString([]byte(r.signingToken))
 	if err != nil {
 		err = fmt.Errorf("GetJWT failed: %w", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
 	err = json.NewEncoder(c.Response().Writer).Encode(JWTToken{JWTToken: tokenString})
 	if err != nil {
-		return err
+        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
 	return c.JSON(http.StatusOK, nil)
 }

@@ -2,6 +2,8 @@ package users
 
 import (
 	"fmt"
+	"github.com/COMTOP1/api/services/afc/users"
+    "github.com/COMTOP1/api/utils"
 	"github.com/labstack/echo/v4"
 	"net/http"
 )
@@ -20,7 +22,7 @@ func (r *Repo) UserByEmail(c echo.Context) error {
 	p, err := r.users.GetUser(email)
 	if err != nil {
 		err = fmt.Errorf("UserByEmail failed: %w", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
 	return c.JSON(http.StatusOK, p)
 }
@@ -39,7 +41,7 @@ func (r *Repo) UserByEmailFull(c echo.Context) error {
 	p, err := r.users.GetUserFull(email)
 	if err != nil {
 		err = fmt.Errorf("UserByEmailFull failed to get user: %w", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
 	return c.JSON(http.StatusOK, p)
 }
@@ -56,12 +58,12 @@ func (r *Repo) UserByToken(c echo.Context) error {
 	claims, err := r.access.GetAFCToken(c.Request())
 	if err != nil {
 		err = fmt.Errorf("UserByToken failed to get token: %w", err)
-		return echo.NewHTTPError(http.StatusBadRequest, err)
+        return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: err.Error()})
 	}
 	p, err := r.users.GetUser(claims.Email)
 	if err != nil {
 		err = fmt.Errorf("UserByToken failed getting user: %w", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
 	return c.JSON(http.StatusOK, p)
 }
@@ -78,12 +80,12 @@ func (r *Repo) UserByTokenFull(c echo.Context) error {
 	claims, err := r.access.GetAFCToken(c.Request())
 	if err != nil {
 		err = fmt.Errorf("UserByTokenFull failed to get token: %w", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
 	p, err := r.users.GetUserFull(claims.Email)
 	if err != nil {
 		err = fmt.Errorf("UserByTokenFull failed getting user: %w", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
 	return c.JSON(http.StatusOK, p)
 }
@@ -100,7 +102,7 @@ func (r *Repo) ListAllUsers(c echo.Context) error {
 	u, err := r.users.ListAllUsers()
 	if err != nil {
 		err = fmt.Errorf("ListAllUsers failed to get all users: %w", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
 	return c.JSON(http.StatusOK, u)
 }
@@ -117,7 +119,24 @@ func (r *Repo) ListAllContactUsers(c echo.Context) error {
 	u, err := r.users.ListContactUsers()
 	if err != nil {
 		err = fmt.Errorf("ListAllContactUsers failed to get all contact users: %w", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
+	return c.JSON(http.StatusOK, u)
+}
+
+func (r *Repo) AddUser(c echo.Context) error {
+	var u *users.UserFull
+	err := c.Bind(&u)
+	if err != nil {
+        fmt.Println("1 - " + err.Error())
+		err = fmt.Errorf("AddUser failed to get user: %w", err)
+        return c.JSON(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
+	fmt.Println(u)
+	err = r.users.AddUser(u)
+    if err != nil {
+        fmt.Println("4 - " + err.Error())
+        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+    }
 	return c.JSON(http.StatusOK, u)
 }
