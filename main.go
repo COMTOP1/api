@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/COMTOP1/api/controllers/admin/v1/admin"
@@ -15,6 +16,15 @@ import (
 )
 
 func main() {
+	hash := []uint8{161, 64, 116, 252, 86, 93, 179, 86, 33, 212, 219, 137, 62, 118, 72, 150, 161, 16, 41, 158, 9, 170, 231, 147, 39, 215, 61, 25, 137, 38, 105, 49, 145, 34, 1, 168, 110, 16, 227, 182, 235, 45, 220, 148, 217, 173, 182, 122, 241, 0, 95, 53, 84, 162, 118, 87, 120, 142, 231, 98, 29, 49, 63, 32}
+	salt := []uint8{174, 254, 21, 182, 67, 162, 129, 237, 136, 35, 243, 191, 209, 163, 18, 40, 65, 199, 26, 74, 42, 251, 137, 195, 142, 28, 193, 207, 151, 108, 15, 45, 60, 239, 198, 128, 248, 149, 250, 250, 123, 185, 83, 29, 87, 133, 160, 83, 173, 180, 131, 14, 24, 115, 21, 76, 172, 64, 35, 213, 142, 134, 208, 106}
+
+	hashEncode := base64.StdEncoding.EncodeToString(hash)
+	fmt.Println(hashEncode)
+
+	saltEncode := base64.StdEncoding.EncodeToString(salt)
+	fmt.Println(saltEncode)
+
 	config := &structs.Config{}
 	_, err := toml.DecodeFile("config.toml", config)
 	if err != nil {
@@ -130,14 +140,19 @@ func main() {
 	if mailer != nil {
 
 		startingTemplate := template.New("Starting Template")
-		startingTemplate = template.Must(startingTemplate.Parse("<body>BSWDI API starting{{if .Debug}} in debug mode!<br><b>Do not run in production</b>{{end}}!<br><br>Version: {{.Version}}<br>Commit: {{.Commit}}<br><br>If you don't get another email then this has started correctly.</body>"))
+		startingTemplate = template.Must(startingTemplate.Parse("<body>BSWDI API starting{{if .Debug}} in debug mode!<br><b>Do not run in production! Authentication is disabled!</b>{{else}}!{{end}}<br><br>Version: {{.Version}}<br>Commit: {{.Commit}}<br><br>If you don't get another email then this has started correctly.</body>"))
+
+		subject := "BSWDI API is starting"
 
 		if config.Server.Debug {
+			subject += " in debug mode"
 			log.Println("Debug Mode - Disabled auth - do not run in production!")
 		}
 
+		subject += "!"
+
 		starting := utils.Mail{
-			Subject:     "BSWDI API is starting!",
+			Subject:     subject,
 			UseDefaults: true,
 			Tpl:         startingTemplate,
 			TplData: struct {
@@ -169,8 +184,7 @@ func main() {
 		Access:     access,
 		Mailer:     mailer,
 		AFC:        afc.NewRepos(afcScope, access),
-		AdminURL:   config.Server.Admin.URL,
-		Admin:      admin.NewRepo(adminScope, access, config.Server.DomainName, config.Server.Access.SigningToken),
+		Admin:      admin.NewRepo(adminScope, access, config.Server.DomainName, config.Server.Admin.URL, config.Server.Access.SigningToken),
 	}).Start()
 	if err != nil {
 		if mailer != nil {

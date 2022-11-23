@@ -7,21 +7,12 @@ import (
 	"time"
 
 	adminPackage "github.com/COMTOP1/api/controllers/admin/v1/admin"
-	afcPackages "github.com/COMTOP1/api/controllers/afc"
 	"github.com/COMTOP1/api/middleware"
 	"github.com/COMTOP1/api/utils"
 	"github.com/labstack/echo/v4"
 )
 
 type (
-	Admin struct {
-		Admin *adminPackage.Repo
-	}
-
-	AFC struct {
-		Users *afcPackages.Repos
-	}
-
 	Router struct {
 		port     string
 		version  string
@@ -30,7 +21,6 @@ type (
 		access   *utils.Accesser
 		mailer   *utils.Mailer
 		afc      *afc.Repos
-		adminURL string
 		admin    *adminPackage.Repo
 	}
 
@@ -43,7 +33,6 @@ type (
 		Access     *utils.Accesser
 		Mailer     *utils.Mailer
 		AFC        *afc.Repos
-		AdminURL   string
 		Admin      *adminPackage.Repo
 	}
 )
@@ -57,7 +46,6 @@ func New(conf *NewRouter) *Router {
 		access:   conf.Access,
 		mailer:   conf.Mailer,
 		afc:      conf.AFC,
-		adminURL: conf.AdminURL,
 		admin:    conf.Admin,
 	}
 	r.router.HideBanner = true
@@ -89,48 +77,121 @@ func (r *Router) loadRoutes() {
 	})
 
 	afcGroup := r.router.Group("/ea231a602d352b2bcc5a2acca6022575") // afc_group --> MD5
-	{
-		afcV1 := afcGroup.Group("/v1")
-		{
-			afcV1.GET("/ping", func(c echo.Context) error {
-				resp := map[string]time.Time{"pong": time.Now()}
-				return c.JSON(http.StatusOK, resp)
-			})
-			internal := afcV1.Group("/internal")
-			{
-				if !r.router.Debug {
-					internal.Use(r.access.AFCAuthMiddleware)
-				}
-				user := internal.Group("/user")
-				{
-					user.GET("/full", r.afc.Users.UserByTokenFull)
-					user.GET("/:email", r.afc.Users.UserByEmail)
-					user.GET("/:email/full", r.afc.Users.UserByEmailFull)
-					user.GET("/all", r.afc.Users.ListAllUsers)
-					user.GET("", r.afc.Users.UserByToken)
-					admin := user.Group("/admin")
-					{
-						admin.Use(r.access.AFCAdminMiddleware)
-					}
-				}
-			}
-			public := afcV1.Group("/public")
-			{
-				public.GET("/contacts", r.afc.Users.ListAllContactUsers)
-			}
-		}
-	}
+    {
+        afcV1 := afcGroup.Group("/v1")
+        {
+            afcV1.GET("/ping", func(c echo.Context) error {
+                resp := map[string]time.Time{"pong": time.Now()}
+                return c.JSON(http.StatusOK, resp)
+            })
+            afcV1.PUT("/add", r.afc.Users.AddUser)
+            internal := afcV1.Group("/internal")
+            {
+                if !r.router.Debug {
+                    internal.Use(r.access.AFCAuthMiddleware)
+                }
+                affiliation := internal.Group("/affiliation")
+                {
+                    _ = affiliation
+                }
+                document := internal.Group("/document")
+                {
+                    _ = document
+                }
+                image := internal.Group("/image")
+                {
+                    _ = image
+                }
+                news := internal.Group("/news")
+                {
+                    _ = news
+                }
+                player := internal.Group("/player")
+                {
+                    _ = player
+                }
+                programme := internal.Group("/programme")
+                {
+                    _ = programme
+                }
+                sponsor := internal.Group("/sponsor")
+                {
+                    _ = sponsor
+                }
+                team := internal.Group("/team")
+                {
+                    _ = team
+                }
+                user := internal.Group("/user")
+                {
+                    admin := user.Group("/admin")
+                    {
+                        if !r.router.Debug {
+                            admin.Use(r.access.AFCAdminMiddleware)
+                        }
+                        admin.PUT("", r.afc.Users.AddUser)
+                        admin.PATCH("/:email", r.afc.Users.EditUser)
+                        admin.DELETE("/:email", r.afc.Users.DeleteUser)
+                    }
+                    user.GET("/full", r.afc.Users.UserByTokenFull)
+                    user.GET("/all", r.afc.Users.ListAllUsers)
+                    user.GET("/:email/full", r.afc.Users.UserByEmailFull)
+                    user.GET("/:email", r.afc.Users.UserByEmail)
+                    user.GET("", r.afc.Users.UserByToken)
+                }
+                whatsOn := internal.Group("/whatsOn")
+                {
+                    _ = whatsOn
+                }
+            }
+            public := afcV1.Group("/public")
+            {
+                public.GET("/affiliations", r.afc.Affiliations.ListAllAffiliations)
+                public.GET("/contacts", r.afc.Users.ListAllContactUsers)
+                public.GET("/documents", r.afc.Documents.ListAllDocuments)
+                public.GET("/images", r.afc.Images.ListAllImages)
+                news := public.Group("/news")
+                {
+                    news.GET("", r.afc.News.ListAllNews)
+                    news.GET("/:id", r.afc.News.GetNewsByID)
+                    news.GET("/latest", r.afc.News.GetNewsLatest)
+                }
+                public.GET("/players/:teamID", r.afc.Players.ListAllPlayersByTeamID)
+                public.GET("/programmes", r.afc.Programmes.ListAllProgrammes)
+                sponsors := public.Group("/sponsors")
+                {
+                    sponsors.GET("", r.afc.Sponsors.ListALlSponsors)
+                    sponsors.GET("/:teamID", r.afc.Sponsors.ListAllSponsorsByTeamID)
+                }
+                public.GET("/teams", r.afc.Teams.ListAllTeams)
+                team := public.Group("/team")
+                {
+                    team.GET("/:id", r.afc.Teams.GetTeamByID)
+                    team.GET("/manager/:id", r.afc.Teams.GetTeamManagerByID)
+                }
+                whatson := public.Group("/whatsOn")
+                {
+                    whatson.GET("", r.afc.WhatsOn.ListAllWhatsOn)
+                    whatson.GET("/:id", r.afc.WhatsOn.GetWhatsOnByID)
+                }
+            }
+        }
+    }
 
-	admin := r.router.Group("/" + r.adminURL)
+	admin := r.router.Group("/" + r.admin.GetAdminURL())
 	{
 		getJWT := admin.Group("/get")
 		{
-			getJWT.Use(r.access.AdminInitAuthMiddleware)
+            if !r.router.Debug {
+                getJWT.Use(r.access.AdminInitAuthMiddleware)
+            }
 			getJWT.GET("/jwt", r.admin.GetJWT)
 		}
 		sso := admin.Group("/sso")
 		{
-			sso.Use(r.access.AdminAuthMiddleware)
+            if !r.router.Debug {
+                sso.Use(r.access.AdminAuthMiddleware)
+            }
 			sso.GET("/jwt", r.admin.GetSSOJWT)
 		}
 	}

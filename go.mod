@@ -6,7 +6,6 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/couchbase/gocb/v2 v2.6.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
-	github.com/labstack/echo-contrib v0.11.0
 	github.com/labstack/echo/v4 v4.9.1
 	github.com/pquerna/otp v1.3.0
 	github.com/satori/go.uuid v1.2.0
@@ -16,7 +15,6 @@ require (
 require (
 	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/couchbase/gocbcore/v10 v10.2.0 // indirect
-	github.com/go-test/deep v1.0.8 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/labstack/gommon v0.4.0 // indirect

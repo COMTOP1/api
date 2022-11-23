@@ -4,6 +4,7 @@ import (
 	"github.com/COMTOP1/api/services/afc/affiliations"
 	"github.com/COMTOP1/api/utils"
 	"github.com/couchbase/gocb/v2"
+    "github.com/labstack/echo/v4"
 )
 
 // Repo stores our dependencies
@@ -18,4 +19,8 @@ func NewRepo(scope *gocb.Scope, access *utils.Accesser) *Repo {
 		affiliations: affiliations.NewStore(scope),
 		access:       access,
 	}
+}
+
+func (r *Repo) ListAllAffiliations(c echo.Context) error {
+    return nil
 }

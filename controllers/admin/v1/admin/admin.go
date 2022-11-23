@@ -20,6 +20,7 @@ type (
 		admin        *admin.Store
 		access       *utils.Accesser
 		domainName   string
+        url          string
 		signingToken string
 	}
 
@@ -51,13 +52,18 @@ type (
 	}
 )
 
-func NewRepo(scope *gocb.Scope, access *utils.Accesser, domainName string, signingToken string) *Repo {
+func NewRepo(scope *gocb.Scope, access *utils.Accesser, domainName string, URL string, signingToken string) *Repo {
 	return &Repo{
 		admin:        admin.NewStore(scope),
 		access:       access,
 		domainName:   domainName,
+        url:          URL,
 		signingToken: signingToken,
 	}
+}
+
+func (r *Repo) GetAdminURL() string {
+    return r.url
 }
 
 func (r *Repo) GetJWT(c echo.Context) error {
@@ -82,7 +88,7 @@ func (r *Repo) GetJWT(c echo.Context) error {
 	if err != nil {
         return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
-	return c.JSON(http.StatusOK, nil)
+    return c.NoContent(http.StatusOK)
 }
 
 func (r *Repo) GetSSOJWT(c echo.Context) error {
@@ -105,7 +111,7 @@ func (r *Repo) GetSSOJWT(c echo.Context) error {
 	if err != nil {
         return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
-	return c.JSON(http.StatusOK, nil)
+	return c.NoContent(http.StatusOK)
 }
 
 func NewWithClaims(method SigningMethod, claims Claims) *Token {
