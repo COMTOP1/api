@@ -35,10 +35,10 @@ func NewRepo(scope *gocb.Scope, access *utils.Accesser) *Repo {
 func (r *Repo) UserByEmail(c echo.Context) error {
 	email := c.Param("email")
 	p, err := r.users.GetUser(email)
-	if err != nil {
-		err = fmt.Errorf("UserByEmail failed: %w", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
-	}
+    if err != nil {
+        err = fmt.Errorf("UserByEmail failed: %w", err)
+        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+    }
 	return c.JSON(http.StatusOK, p)
 }
 
@@ -143,23 +143,41 @@ func (r *Repo) AddUser(c echo.Context) error {
 	var u *users.UserFull
 	err := c.Bind(&u)
 	if err != nil {
-		fmt.Println("1 - " + err.Error())
 		err = fmt.Errorf("AddUser failed to get user: %w", err)
 		return c.JSON(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
-	fmt.Println(u)
 	err = r.users.AddUser(u)
 	if err != nil {
-		fmt.Println("4 - " + err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
 	return c.JSON(http.StatusOK, u)
 }
 
 func (r *Repo) EditUser(c echo.Context) error {
-	return nil
+    var u *users.UserFull
+    err := c.Bind(&u)
+    if err != nil {
+        err = fmt.Errorf("EditUser failed to get user: %w", err)
+        return c.JSON(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+    }
+    err = r.users.EditUser(u)
+    if err != nil {
+        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+    }
+    return c.JSON(http.StatusOK, u)
 }
 
 func (r *Repo) DeleteUser(c echo.Context) error {
-	return nil
+    email := c.Param("email")
+    _, err := r.users.GetUserFull(email)
+    if err != nil {
+        err = fmt.Errorf("DeleteUser failed to get user: %w", err)
+        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+    }
+    err = r.users.DeleteUser(email)
+    if err != nil {
+        err = fmt.Errorf("DeleteUser failed to delete user: %w", err)
+        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+    }
+    return c.NoContent(http.StatusOK)
 }

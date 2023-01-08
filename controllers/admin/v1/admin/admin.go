@@ -28,14 +28,18 @@ type (
 		jwt.StandardClaims
 	}
 
-	Token struct {
-		Raw       string                 // The raw token.  Populated when you Parse a token
-		Method    SigningMethod          // The signing method used or to be used
-		Header    map[string]interface{} // The first segment of the token
-		Claims    Claims                 // The second segment of the token
-		Signature string                 // The third segment of the token.  Populated when you Parse a token
-		Valid     bool                   // Is the token valid?  Populated when you Parse/Verify a token
-	}
+    Token struct {
+        jwt.Token
+    }
+
+//	Token struct {
+//		Raw       string                 // The raw token.  Populated when you Parse a token
+//		Method    SigningMethod          // The signing method used or to be used
+//		Header    map[string]interface{} // The first segment of the token
+//		Claims    Claims                 // The second segment of the token
+//		Signature string                 // The third segment of the token.  Populated when you Parse a token
+//		Valid     bool                   // Is the token valid?  Populated when you Parse/Verify a token
+//	}
 
 	SigningMethod interface {
 		Verify(signingString, signature string, key interface{}) error // Returns nil if signature is valid
@@ -68,7 +72,7 @@ func (r *Repo) GetAdminURL() string {
 
 func (r *Repo) GetJWT(c echo.Context) error {
 	timeNow := time.Now()
-	expirationTime := timeNow.Add(5 * time.Minute).Unix()
+	expirationTime := timeNow.Add(2 * time.Minute).Unix()
 	uuid1 := uuid.NewV4()
 	claim := &jwt.StandardClaims{
 		Audience:  "https://api." + r.domainName,
@@ -88,35 +92,55 @@ func (r *Repo) GetJWT(c echo.Context) error {
 	if err != nil {
         return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
-    return c.NoContent(http.StatusOK)
+    return c.NoContent(http.StatusAccepted)
 }
 
 func (r *Repo) GetSSOJWT(c echo.Context) error {
-	timeNow := time.Now()
-	uuid1 := uuid.NewV4()
+	timeNow := time.Now().Unix()
+	uuid1 := uuid.NewV4().String()
 	claim := &jwt.StandardClaims{
 		Audience:  "https://sso." + r.domainName,
-		Id:        uuid1.String(),
-		IssuedAt:  timeNow.Unix(),
+		Id:        uuid1,
+		IssuedAt:  timeNow,
 		Issuer:    "https://api." + r.domainName,
-		NotBefore: timeNow.Unix(),
+		NotBefore: timeNow,
 	}
 	token := NewWithClaims(jwt.SigningMethodHS512, claim)
 	tokenString, err := token.SignedString([]byte(r.signingToken))
 	if err != nil {
 		err = fmt.Errorf("GetJWT failed: %w", err)
         return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
-	}
+    }
+    kid := fmt.Sprintf("%v", token.Header["kid"])
+    err = r.admin.AddSSOJWT(claim, kid, c.Request().UserAgent())
+    if err != nil {
+        err = fmt.Errorf("getSSOJWT error: %w", err)
+        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+    }
 	err = json.NewEncoder(c.Response().Writer).Encode(JWTToken{JWTToken: tokenString})
 	if err != nil {
         return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
-	return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusAccepted)
 }
 
-func NewWithClaims(method SigningMethod, claims Claims) *Token {
+func (r *Repo) VerifySSO(c echo.Context) error {
+    kid, claims, err := r.access.GetAdminTokenKIDAndClaims(c.Request())
+    if err != nil {
+        err = fmt.Errorf("verifySSOJWT error: %w", err)
+        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+    }
+    err = r.admin.VerifySSOJWT(claims, kid, c.Request().UserAgent())
+    if err != nil {
+        err = fmt.Errorf("verifySSOJWT error: %w", err)
+        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+    }
+    return c.NoContent(http.StatusAccepted)
+}
+
+func NewWithClaims(method SigningMethod, claims Claims) *jwt.Token {
 	uuid1 := uuid.NewV4()
-	return &Token{
+	return &jwt.Token{
 		Header: map[string]interface{}{
 			"typ": "JWT",
 			"kid": uuid1.String(),

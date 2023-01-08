@@ -130,7 +130,7 @@ func (r *Router) loadRoutes() {
                             admin.Use(r.access.AFCAdminMiddleware)
                         }
                         admin.PUT("", r.afc.Users.AddUser)
-                        admin.PATCH("/:email", r.afc.Users.EditUser)
+                        admin.PATCH("", r.afc.Users.EditUser)
                         admin.DELETE("/:email", r.afc.Users.DeleteUser)
                     }
                     user.GET("/full", r.afc.Users.UserByTokenFull)
@@ -142,6 +142,9 @@ func (r *Router) loadRoutes() {
                 whatsOn := internal.Group("/whatsOn")
                 {
                     _ = whatsOn
+                    whatsOn.PUT("", r.afc.WhatsOn.AddWhatsOn)
+                    whatsOn.PATCH("/:id", r.afc.WhatsOn.EditWhatsOn)
+                    whatsOn.DELETE("/:id", r.afc.WhatsOn.DeleteWhatsOn)
                 }
             }
             public := afcV1.Group("/public")
@@ -193,6 +196,7 @@ func (r *Router) loadRoutes() {
                 sso.Use(r.access.AdminAuthMiddleware)
             }
 			sso.GET("/jwt", r.admin.GetSSOJWT)
+            sso.GET("/verify", r.admin.VerifySSO)
 		}
 	}
 

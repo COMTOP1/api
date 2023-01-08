@@ -3,25 +3,26 @@ package users
 import (
 	"fmt"
 	"github.com/couchbase/gocb/v2"
+    "strings"
 )
 
 type (
 	// UserRepo defines all user interactions
-	UserRepo interface {
-		GetUser(email string) (User, error)
-		GetUserFull(email string) (UserFull, error)
-		ListAllUsers() ([]User, error)
-		ListContactUsers() ([]User, error)
-		AddUser(user *UserFull) error
-	}
+    UserRepo interface {
+        GetUser(email string) (User, error)
+        GetUserFull(email string) (UserFull, error)
+        ListAllUsers() ([]User, error)
+        ListContactUsers() ([]User, error)
+        AddUser(user *UserFull) error
+        EditUser(user *UserFull) error
+        DeleteUser(email string) error
+    }
 
 	// Store contains our dependency
 	Store struct {
 		scope *gocb.Scope
 	}
-)
 
-type (
 	//User represents a user object to be used when not all data is required
 	User struct {
 		Email string `json:"email"`
@@ -53,32 +54,40 @@ func NewStore(scope *gocb.Scope) *Store {
 	return &Store{scope: scope}
 }
 
+// GetUser returns basic user information to be used for other services.
+func (m *Store) GetUser(email string) (u User, err error) {
+    result, err := m.scope.Collection("users").Get("user:"+email, nil)
+    if err != nil {
+        if strings.Contains(err.Error(), "document not found") {
+            return User{}, fmt.Errorf("user doesn't exist: %s", email)
+        } else {
+            return User{}, fmt.Errorf("failed to get user: %w", err)
+        }
+    }
+
+    err = result.Content(&u)
+    if err != nil {
+        return User{}, fmt.Errorf("failed to get user: %w", err)
+    }
+    return u, nil
+}
+
 // GetUserFull will return all user information to be used for profile and management.
 func (m *Store) GetUserFull(email string) (u UserFull, err error) {
 	result, err := m.scope.Collection("users").Get("user:"+email, nil)
 	if err != nil {
-		return UserFull{}, fmt.Errorf("failed to get user: %w", err)
+        if strings.Contains(err.Error(), "document not found") {
+            return UserFull{}, fmt.Errorf("user doesn't exist: %s", email)
+        } else {
+            return UserFull{}, fmt.Errorf("failed to get user: %w", err)
+        }
 	}
 
-	err = result.Content(&u)
+    err = result.Content(&u)
 	if err != nil {
 		return UserFull{}, fmt.Errorf("failed to get user: %w", err)
 	}
     fmt.Println(u)
-	return u, nil
-}
-
-// GetUser returns basic user information to be used for other services.
-func (m *Store) GetUser(email string) (u User, err error) {
-	result, err := m.scope.Collection("users").Get("user:"+email, nil)
-	if err != nil {
-		return User{}, fmt.Errorf("failed to get user: %w", err)
-	}
-
-	err = result.Content(&u)
-	if err != nil {
-		return User{}, fmt.Errorf("failed to get user: %w", err)
-	}
 	return u, nil
 }
 
@@ -127,24 +136,69 @@ func (m *Store) ListContactUsers() (u []User, err error) {
 }
 
 func (m *Store) AddUser(u *UserFull) error {
+    fmt.Println(u)
 	result, err := m.scope.Query("SELECT `email` FROM users WHERE `email` = $1", &gocb.QueryOptions{
 		Adhoc:                false,
 		PositionalParameters: []interface{}{u.Email},
 	})
 	if err != nil {
-		fmt.Println("2 - " + err.Error())
-		return err
+        if !strings.Contains(err.Error(), "document not found") {
+            return fmt.Errorf("failed to get user: %w", err)
+        }
 	}
 	for result.Next() {
 		return fmt.Errorf("email already exists")
 	}
 	mut, err := m.scope.Collection("users").Insert("user:"+u.Email, u, nil)
 	if err != nil {
-		fmt.Println("3 - " + err.Error())
 		return fmt.Errorf("failed to add user: %w", err)
 	}
 	fmt.Println(mut)
 	return nil
+}
+
+func (m *Store) EditUser(u *UserFull) error {
+    result, err := m.scope.Query("SELECT `email` FROM users WHERE `email` = $1", &gocb.QueryOptions{
+        Adhoc:                false,
+        PositionalParameters: []interface{}{u.Email},
+        })
+    if err != nil {
+        if !strings.Contains(err.Error(), "document not found") {
+            return fmt.Errorf("failed to get user: %w", err)
+        }
+    }
+    if result.Next() {
+        mut, err := m.scope.Collection("users").Upsert("user:"+u.Email, u, nil)
+        fmt.Println(mut)
+        if err != nil {
+            return err
+        }
+        return nil
+    } else {
+        return fmt.Errorf("email doesn't exists")
+    }
+}
+
+func (m *Store) DeleteUser(email string) error {
+    result, err := m.scope.Query("SELECT `email` FROM users WHERE `email` = $1", &gocb.QueryOptions{
+        Adhoc:                false,
+        PositionalParameters: []interface{}{email},
+        })
+    if err != nil {
+        if !strings.Contains(err.Error(), "document not found") {
+            return fmt.Errorf("failed to get user: %w", err)
+        }
+    }
+    if result.Next() {
+        mut, err := m.scope.Collection("users").Remove("user:"+email, nil)
+        fmt.Println(mut)
+        if err != nil {
+            return err
+        }
+        return nil
+    } else {
+        return fmt.Errorf("email doesn't exists")
+    }
 }
 
 /*{

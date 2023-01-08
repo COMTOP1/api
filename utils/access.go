@@ -98,7 +98,7 @@ func (a *Accesser) FindAdminToken(r *http.Request) bool {
 //
 // First will check the Authorization header, if unset will
 // check the access cookie
-func (a *Accesser) GetAdminToken(r *http.Request) (*AccessClaims, error) {
+func (a *Accesser) GetAdminToken(r *http.Request) (*jwt.Token, error) {
 	token := r.Header.Get("Authorization")
 
 	if len(token) == 0 {
@@ -121,7 +121,39 @@ func (a *Accesser) GetAdminToken(r *http.Request) (*AccessClaims, error) {
 	if token == "" {
 		return nil, ErrNoToken
 	}
-	return a.getClaims(token)
+
+	return a.getAdminClaims(token)
+}
+
+// GetAdminToken will return the claims from an admin access token JWT
+//
+// First will check the Authorization header, if unset will
+// check the access cookie
+func (a *Accesser) GetAdminTokenKIDAndClaims(r *http.Request) (string, *jwt.StandardClaims, error) {
+    token := r.Header.Get("Authorization")
+
+    if len(token) == 0 {
+        cookie, err := r.Cookie(a.conf.Admin.AdminAccessCookieName)
+        if err != nil {
+            if errors.As(http.ErrNoCookie, &err) {
+                return "", nil, ErrNoToken
+            }
+            return "", nil, fmt.Errorf("failed to get cookie: %w", err)
+        }
+        token = cookie.Value
+    } else {
+        splitToken := strings.Split(token, "Bearer ")
+        if len(splitToken) != 2 {
+            return "", nil, ErrInvalidToken
+        }
+        token = splitToken[1]
+    }
+
+    if token == "" {
+        return "", nil, ErrNoToken
+    }
+
+    return a.getAdminClaimsKIDAndClaims(token)
 }
 
 // GetAFCToken will return the claims from an AFC access token JWT
@@ -200,15 +232,48 @@ func (a *Accesser) getAFCClaims(token string) (*AFCAccessClaims, error) {
 }
 
 func (a *Accesser) getClaims(token string) (*AccessClaims, error) {
-	claims := &AccessClaims{}
+    claims := &AccessClaims{}
 
-	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
-		return a.conf.SigningKey, nil
-	})
-	if err != nil {
-		return nil, ErrInvalidToken
-	}
-	return claims, nil
+    jwt1, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+        return a.conf.SigningKey, nil
+    })
+    if err != nil {
+        return nil, ErrInvalidToken
+    }
+    if jwt1.Valid && claims.Issuer == "https://sso."+a.conf.DomainName && strings.Contains(claims.Audience, a.conf.DomainName) && claims.IssuedAt == claims.NotBefore && claims.ExpiresAt > time.Now().Unix() {
+        return claims, nil
+    }
+    return nil, ErrInvalidToken
+}
+
+func (a *Accesser) getAdminClaims(token string) (*jwt.Token, error) {
+    claims := &jwt.StandardClaims{}
+
+    jwt1, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+        return a.conf.SigningKey, nil
+    })
+    if err != nil {
+        return nil, ErrInvalidToken
+    }
+    if jwt1.Valid && claims.Issuer == "https://sso."+a.conf.DomainName && strings.Contains(claims.Audience, a.conf.DomainName) && claims.IssuedAt == claims.NotBefore && claims.ExpiresAt > time.Now().Unix() {
+        return jwt1, nil
+    }
+    return nil, ErrInvalidToken
+}
+
+func (a *Accesser) getAdminClaimsKIDAndClaims(token string) (string, *jwt.StandardClaims, error) {
+    claims := &jwt.StandardClaims{}
+
+    jwt1, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+        return a.conf.SigningKey, nil
+    })
+    if err != nil {
+        return "", nil, ErrInvalidToken
+    }
+    if jwt1.Valid && claims.Issuer == "https://sso."+a.conf.DomainName && strings.Contains(claims.Audience, a.conf.DomainName) && claims.IssuedAt == claims.NotBefore && claims.ExpiresAt > time.Now().Unix() {
+        return fmt.Sprintf("%v", jwt1.Header["kid"]), claims, nil
+    }
+    return "", nil, ErrInvalidToken
 }
 
 // AdminInitAuthMiddleware checks a HTTP request for a valid token either in the header or cookie
@@ -222,14 +287,14 @@ func (a *Accesser) AdminInitAuthMiddleware(next echo.HandlerFunc) echo.HandlerFu
 		}
 		var adminRequest *AdminRequest
 		err := json.NewDecoder(c.Request().Body).Decode(&adminRequest)
-		if err != nil {
-			return &echo.HTTPError{
-				Code:     http.StatusBadRequest,
-				Message:  err.Error(),
-				Internal: err,
-			}
-		}
-		valid := totp.Validate(adminRequest.TOTPCode, a.conf.Admin.TOTP)
+        if err != nil {
+            return &echo.HTTPError{
+                Code:     http.StatusBadRequest,
+                Message:  err.Error(),
+                Internal: err,
+                }
+        }
+        valid := totp.Validate(adminRequest.TOTPCode, a.conf.Admin.TOTP)
 		if !valid {
 			return &echo.HTTPError{
 				Code:     http.StatusUnauthorized,
