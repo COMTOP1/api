@@ -2,6 +2,7 @@ package users
 
 import (
 	"fmt"
+	"github.com/COMTOP1/api/controllers"
 	"github.com/COMTOP1/api/services/afc/users"
 	"github.com/COMTOP1/api/utils"
 	"github.com/couchbase/gocb/v2"
@@ -11,15 +12,15 @@ import (
 
 // Repo stores our dependencies
 type Repo struct {
-	users  *users.Store
-	access *utils.Accesser
+	users      *users.Store
+	controller controllers.Controller
 }
 
 // NewRepo creates our data store
-func NewRepo(scope *gocb.Scope, access *utils.Accesser) *Repo {
+func NewRepo(scope *gocb.Scope, controller controllers.Controller) *Repo {
 	return &Repo{
-		users:  users.NewStore(scope),
-		access: access,
+		users:      users.NewStore(scope),
+		controller: controller,
 	}
 }
 
@@ -35,10 +36,10 @@ func NewRepo(scope *gocb.Scope, access *utils.Accesser) *Repo {
 func (r *Repo) UserByEmail(c echo.Context) error {
 	email := c.Param("email")
 	p, err := r.users.GetUser(email)
-    if err != nil {
-        err = fmt.Errorf("UserByEmail failed: %w", err)
-        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
-    }
+	if err != nil {
+		err = fmt.Errorf("UserByEmail failed: %w", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
 	return c.JSON(http.StatusOK, p)
 }
 
@@ -70,7 +71,7 @@ func (r *Repo) UserByEmailFull(c echo.Context) error {
 // @Success 200 {object} users.User
 // @Router /ea231a602d352b2bcc5a2acca6022575/v1/internal/user [get]
 func (r *Repo) UserByToken(c echo.Context) error {
-	claims, err := r.access.GetAFCToken(c.Request())
+	claims, err := r.controller.Access.GetAFCToken(c.Request())
 	if err != nil {
 		err = fmt.Errorf("UserByToken failed to get token: %w", err)
 		return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: err.Error()})
@@ -92,7 +93,7 @@ func (r *Repo) UserByToken(c echo.Context) error {
 // @Success 200 {object} user.UserFull
 // @Router /ea231a602d352b2bcc5a2acca6022575/v1/internal/user/full [get]
 func (r *Repo) UserByTokenFull(c echo.Context) error {
-	claims, err := r.access.GetAFCToken(c.Request())
+	claims, err := r.controller.Access.GetAFCToken(c.Request())
 	if err != nil {
 		err = fmt.Errorf("UserByTokenFull failed to get token: %w", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
@@ -154,30 +155,30 @@ func (r *Repo) AddUser(c echo.Context) error {
 }
 
 func (r *Repo) EditUser(c echo.Context) error {
-    var u *users.UserFull
-    err := c.Bind(&u)
-    if err != nil {
-        err = fmt.Errorf("EditUser failed to get user: %w", err)
-        return c.JSON(http.StatusInternalServerError, utils.Error{Error: err.Error()})
-    }
-    err = r.users.EditUser(u)
-    if err != nil {
-        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
-    }
-    return c.JSON(http.StatusOK, u)
+	var u *users.UserFull
+	err := c.Bind(&u)
+	if err != nil {
+		err = fmt.Errorf("EditUser failed to get user: %w", err)
+		return c.JSON(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
+	err = r.users.EditUser(u)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
+	return c.JSON(http.StatusOK, u)
 }
 
 func (r *Repo) DeleteUser(c echo.Context) error {
-    email := c.Param("email")
-    _, err := r.users.GetUserFull(email)
-    if err != nil {
-        err = fmt.Errorf("DeleteUser failed to get user: %w", err)
-        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
-    }
-    err = r.users.DeleteUser(email)
-    if err != nil {
-        err = fmt.Errorf("DeleteUser failed to delete user: %w", err)
-        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
-    }
-    return c.NoContent(http.StatusOK)
+	email := c.Param("email")
+	_, err := r.users.GetUserFull(email)
+	if err != nil {
+		err = fmt.Errorf("DeleteUser failed to get user: %w", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
+	err = r.users.DeleteUser(email)
+	if err != nil {
+		err = fmt.Errorf("DeleteUser failed to delete user: %w", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
+	return c.NoContent(http.StatusOK)
 }

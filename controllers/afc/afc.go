@@ -1,6 +1,7 @@
 package afc
 
 import (
+	"github.com/COMTOP1/api/controllers"
 	"github.com/COMTOP1/api/controllers/afc/v1/affiliations"
 	"github.com/COMTOP1/api/controllers/afc/v1/documents"
 	"github.com/COMTOP1/api/controllers/afc/v1/images"
@@ -11,12 +12,10 @@ import (
 	"github.com/COMTOP1/api/controllers/afc/v1/teams"
 	"github.com/COMTOP1/api/controllers/afc/v1/users"
 	"github.com/COMTOP1/api/controllers/afc/v1/whatsOn"
-	"github.com/COMTOP1/api/utils"
 	"github.com/couchbase/gocb/v2"
 )
 
 type Repos struct {
-	access       *utils.Accesser
 	Affiliations *affiliations.Repo
 	Documents    *documents.Repo
 	Images       *images.Repo
@@ -29,18 +28,17 @@ type Repos struct {
 	WhatsOn      *whatsOn.Repo
 }
 
-func NewRepos(scope *gocb.Scope, access *utils.Accesser) *Repos {
+func NewRepos(scope *gocb.Scope, controller controllers.Controller) *Repos {
 	return &Repos{
-		access:       access,
-		Affiliations: affiliations.NewRepo(scope, access),
-		Documents:    documents.NewRepo(scope, access),
-		Images:       images.NewRepo(scope, access),
-		News:         news.NewRepo(scope, access),
-		Players:      players.NewRepo(scope, access),
-		Programmes:   programmes.NewRepo(scope, access),
-		Sponsors:     sponsors.NewRepo(scope, access),
-		Teams:        teams.NewRepo(scope, access),
-		Users:        users.NewRepo(scope, access),
-		WhatsOn:      whatsOn.NewRepo(scope, access),
+		Affiliations: affiliations.NewRepo(scope, controller),
+		Documents:    documents.NewRepo(scope, controller),
+		Images:       images.NewRepo(scope, controller),
+		News:         news.NewRepo(scope, controller),
+		Players:      players.NewRepo(scope, controller),
+		Programmes:   programmes.NewRepo(scope, controller),
+		Sponsors:     sponsors.NewRepo(scope, controller),
+		Teams:        teams.NewRepo(scope, controller),
+		Users:        users.NewRepo(scope, controller),
+		WhatsOn:      whatsOn.NewRepo(scope, controller),
 	}
 }
