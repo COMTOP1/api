@@ -14,14 +14,14 @@ import (
 
 type (
 	Router struct {
-		port     string
-		version  string
-		commit   string
-		router   *echo.Echo
-		access   *utils.Accesser
-		mailer   *utils.Mailer
-		afc      *afc.Repos
-		admin    *adminPackage.Repo
+		port    string
+		version string
+		commit  string
+		router  *echo.Echo
+		access  *utils.Accesser
+		mailer  *utils.Mailer
+		afc     *afc.Repos
+		admin   *adminPackage.Repo
 	}
 
 	NewRouter struct {
@@ -37,16 +37,16 @@ type (
 	}
 )
 
-func New(conf *NewRouter) *Router {
+func New(conf *NewRouter) (*Router, error) {
 	r := &Router{
-		port:     conf.Port,
-		version:  conf.Version,
-		commit:   conf.Commit,
-		router:   echo.New(),
-		access:   conf.Access,
-		mailer:   conf.Mailer,
-		afc:      conf.AFC,
-		admin:    conf.Admin,
+		port:    conf.Port,
+		version: conf.Version,
+		commit:  conf.Commit,
+		router:  echo.New(),
+		access:  conf.Access,
+		mailer:  conf.Mailer,
+		afc:     conf.AFC,
+		admin:   conf.Admin,
 	}
 	r.router.HideBanner = true
 
@@ -56,7 +56,7 @@ func New(conf *NewRouter) *Router {
 
 	r.loadRoutes()
 
-	return r
+	return r, nil
 }
 
 func (r *Router) Start() error {
@@ -71,133 +71,142 @@ func (r *Router) Start() error {
 // @contact.url https://github.com/COMTOP1/api
 // @contact.email api@bswdi.co.uk
 func (r *Router) loadRoutes() {
+	r.router.RouteNotFound("/*", func(c echo.Context) error {
+		return c.JSON(http.StatusNotFound, utils.Error{Error: "Not found"})
+	})
+
 	r.router.GET("/ping", func(c echo.Context) error {
 		resp := map[string]time.Time{"pong": time.Now()}
 		return c.JSON(http.StatusOK, resp)
 	})
 
 	afcGroup := r.router.Group("/ea231a602d352b2bcc5a2acca6022575") // afc_group --> MD5
-    {
-        afcV1 := afcGroup.Group("/v1")
-        {
-            afcV1.GET("/ping", func(c echo.Context) error {
-                resp := map[string]time.Time{"pong": time.Now()}
-                return c.JSON(http.StatusOK, resp)
-            })
-            afcV1.PUT("/add", r.afc.Users.AddUser)
-            internal := afcV1.Group("/internal")
-            {
-                if !r.router.Debug {
-                    internal.Use(r.access.AFCAuthMiddleware)
-                }
-                affiliation := internal.Group("/affiliation")
-                {
-                    _ = affiliation
-                }
-                document := internal.Group("/document")
-                {
-                    _ = document
-                }
-                image := internal.Group("/image")
-                {
-                    _ = image
-                }
-                news := internal.Group("/news")
-                {
-                    _ = news
-                }
-                player := internal.Group("/player")
-                {
-                    _ = player
-                }
-                programme := internal.Group("/programme")
-                {
-                    _ = programme
-                }
-                sponsor := internal.Group("/sponsor")
-                {
-                    _ = sponsor
-                }
-                team := internal.Group("/team")
-                {
-                    _ = team
-                }
-                user := internal.Group("/user")
-                {
-                    admin := user.Group("/admin")
-                    {
-                        if !r.router.Debug {
-                            admin.Use(r.access.AFCAdminMiddleware)
-                        }
-                        admin.PUT("", r.afc.Users.AddUser)
-                        admin.PATCH("", r.afc.Users.EditUser)
-                        admin.DELETE("/:email", r.afc.Users.DeleteUser)
-                    }
-                    user.GET("/full", r.afc.Users.UserByTokenFull)
-                    user.GET("/all", r.afc.Users.ListAllUsers)
-                    user.GET("/:email/full", r.afc.Users.UserByEmailFull)
-                    user.GET("/:email", r.afc.Users.UserByEmail)
-                    user.GET("", r.afc.Users.UserByToken)
-                }
-                whatsOn := internal.Group("/whatsOn")
-                {
-                    _ = whatsOn
-                    whatsOn.PUT("", r.afc.WhatsOn.AddWhatsOn)
-                    whatsOn.PATCH("/:id", r.afc.WhatsOn.EditWhatsOn)
-                    whatsOn.DELETE("/:id", r.afc.WhatsOn.DeleteWhatsOn)
-                }
-            }
-            public := afcV1.Group("/public")
-            {
-                public.GET("/affiliations", r.afc.Affiliations.ListAllAffiliations)
-                public.GET("/contacts", r.afc.Users.ListAllContactUsers)
-                public.GET("/documents", r.afc.Documents.ListAllDocuments)
-                public.GET("/images", r.afc.Images.ListAllImages)
-                news := public.Group("/news")
-                {
-                    news.GET("", r.afc.News.ListAllNews)
-                    news.GET("/:id", r.afc.News.GetNewsByID)
-                    news.GET("/latest", r.afc.News.GetNewsLatest)
-                }
-                public.GET("/players/:teamID", r.afc.Players.ListAllPlayersByTeamID)
-                public.GET("/programmes", r.afc.Programmes.ListAllProgrammes)
-                sponsors := public.Group("/sponsors")
-                {
-                    sponsors.GET("", r.afc.Sponsors.ListALlSponsors)
-                    sponsors.GET("/:teamID", r.afc.Sponsors.ListAllSponsorsByTeamID)
-                }
-                public.GET("/teams", r.afc.Teams.ListAllTeams)
-                team := public.Group("/team")
-                {
-                    team.GET("/:id", r.afc.Teams.GetTeamByID)
-                    team.GET("/manager/:id", r.afc.Teams.GetTeamManagerByID)
-                }
-                whatson := public.Group("/whatsOn")
-                {
-                    whatson.GET("", r.afc.WhatsOn.ListAllWhatsOn)
-                    whatson.GET("/:id", r.afc.WhatsOn.GetWhatsOnByID)
-                }
-            }
-        }
-    }
+	{
+		afcV1 := afcGroup.Group("/v1")
+		{
+			afcV1.GET("/ping", func(c echo.Context) error {
+				resp := map[string]time.Time{"pong": time.Now()}
+				return c.JSON(http.StatusOK, resp)
+			})
+			internal := afcV1.Group("/internal")
+			{
+				if !r.router.Debug {
+					internal.Use(r.access.AFCAuthMiddleware)
+				}
+				affiliation := internal.Group("/affiliation")
+				{
+					_ = affiliation
+				}
+				document := internal.Group("/document")
+				{
+					_ = document
+				}
+				image := internal.Group("/image")
+				{
+					_ = image
+				}
+				news := internal.Group("/news")
+				{
+					_ = news
+				}
+				player := internal.Group("/player")
+				{
+					_ = player
+				}
+				programme := internal.Group("/programme")
+				{
+					_ = programme
+				}
+				sponsor := internal.Group("/sponsor")
+				{
+					_ = sponsor
+				}
+				team := internal.Group("/team")
+				{
+					_ = team
+				}
+				user := internal.Group("/user")
+				{
+					admin := user.Group("/admin")
+					{
+						if !r.router.Debug {
+							admin.Use(r.access.AFCAdminMiddleware)
+						}
+						admin.PUT("", r.afc.Users.AddUser)
+						admin.PATCH("", r.afc.Users.EditUser)
+						admin.DELETE("/:email", r.afc.Users.DeleteUser)
+					}
+					user.GET("/full", r.afc.Users.UserByTokenFull)
+					user.GET("/all", r.afc.Users.ListAllUsers)
+					user.GET("/:email/full", r.afc.Users.UserByEmailFull)
+					user.GET("/:email", r.afc.Users.UserByEmail)
+					user.GET("", r.afc.Users.UserByToken)
+				}
+				whatsOn := internal.Group("/whatsOn")
+				{
+					_ = whatsOn
+					whatsOn.PUT("", r.afc.WhatsOn.AddWhatsOn)
+					whatsOn.PATCH("/", r.afc.WhatsOn.EditWhatsOn)
+					whatsOn.DELETE("/:id", r.afc.WhatsOn.DeleteWhatsOn)
+				}
+			}
+			public := afcV1.Group("/public")
+			{
+				public.GET("/affiliations", r.afc.Affiliations.ListAllAffiliations)
+				public.GET("/contacts", r.afc.Users.ListAllContactUsers)
+				public.GET("/documents", r.afc.Documents.ListAllDocuments)
+				public.GET("/images", r.afc.Images.ListAllImages)
+				news := public.Group("/news")
+				{
+					news.GET("", r.afc.News.ListAllNews)
+					news.GET("/latest", r.afc.News.GetNewsLatest)
+					news.GET("/:id", r.afc.News.GetNewsByID)
+				}
+				public.GET("/players/:teamID", r.afc.Players.ListAllPlayersByTeamID)
+				public.GET("/programmes", r.afc.Programmes.ListAllProgrammes)
+				sponsors := public.Group("/sponsors")
+				{
+					sponsors.GET("", r.afc.Sponsors.ListALlSponsors)
+					sponsors.GET("/:teamID", r.afc.Sponsors.ListAllSponsorsByTeamID)
+				}
+				public.GET("/teams", r.afc.Teams.ListAllTeams)
+				team := public.Group("/team")
+				{
+					team.GET("/:id", r.afc.Teams.GetTeamByID)
+					team.GET("/manager/:id", r.afc.Teams.GetTeamManagerByID)
+				}
+				whatsOn := public.Group("/whatsOn")
+				{
+					whatsOn.GET("", r.afc.WhatsOn.ListAllWhatsOn)
+					whatsOn.GET("/latest", r.afc.WhatsOn.GetWhatsOnLatest)
+					whatsOn.GET("/:id", r.afc.WhatsOn.GetWhatsOnByID)
+				}
+			}
+		}
+	}
 
 	admin := r.router.Group("/" + r.admin.GetAdminURL())
 	{
 		getJWT := admin.Group("/get")
 		{
-            if !r.router.Debug {
-                getJWT.Use(r.access.AdminInitAuthMiddleware)
-            }
+			if !r.router.Debug {
+				getJWT.Use(r.access.AdminInitAuthMiddleware)
+			}
 			getJWT.GET("/jwt", r.admin.GetJWT)
 		}
 		sso := admin.Group("/sso")
 		{
-            if !r.router.Debug {
-                sso.Use(r.access.AdminAuthMiddleware)
-            }
+			if !r.router.Debug {
+				sso.Use(r.access.AdminAuthMiddleware)
+			}
 			sso.GET("/jwt", r.admin.GetSSOJWT)
-            sso.GET("/verify", r.admin.VerifySSO)
+			sso.GET("/verify", r.admin.VerifySSO)
 		}
+	}
+
+	bswdiGroup := r.router.Group("/722e33d4be5c82dfbf45d585679f6c43") // bswdi_group --> MD5
+	{
+		_ = bswdiGroup
 	}
 
 	r.router.GET("/", func(c echo.Context) error {

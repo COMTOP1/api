@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"github.com/BurntSushi/toml"
+	"github.com/COMTOP1/api/controllers"
 	"github.com/COMTOP1/api/controllers/admin/v1/admin"
 	"github.com/COMTOP1/api/controllers/afc"
+	"github.com/COMTOP1/api/handler"
 	"github.com/COMTOP1/api/routes"
 	"github.com/COMTOP1/api/structs"
 	"github.com/COMTOP1/api/utils"
@@ -165,7 +167,23 @@ func main() {
 
 	adminScope := bucket.Scope("admin")
 
-	err = routes.New(&routes.NewRouter{
+	session, err := handler.NewSession(config.Server.DomainName)
+	if err != nil {
+		if mailer != nil {
+			err1 := mailer.SendErrorFatalMail(utils.Mail{
+				Error:       fmt.Errorf("the session couldn't be initialised: %s... exiting", err),
+				UseDefaults: true,
+			})
+			if err1 != nil {
+				fmt.Println(err1)
+			}
+		}
+		log.Fatalf("The session couldn't be initialised!\n\n%s\n\nExiting!", err)
+	}
+
+	controller := controllers.GetController(access, session)
+
+	router, err := routes.New(&routes.NewRouter{
 		Port:       config.Server.Port,
 		Version:    config.Server.Version,
 		Commit:     config.Server.Commit,
@@ -173,9 +191,23 @@ func main() {
 		Debug:      config.Server.Debug,
 		Access:     access,
 		Mailer:     mailer,
-		AFC:        afc.NewRepos(afcScope, access),
-		Admin:      admin.NewRepo(adminScope, access, config.Server.DomainName, config.Server.Admin.URL, config.Server.Access.SigningToken),
-	}).Start()
+		AFC:        afc.NewRepos(afcScope, controller),
+		Admin:      admin.NewRepo(adminScope, controller, config.Server.DomainName, config.Server.Admin.URL, []byte(config.Server.Access.SigningToken)),
+	})
+	if err != nil {
+		if mailer != nil {
+			err1 := mailer.SendErrorFatalMail(utils.Mail{
+				Error:       fmt.Errorf("the router couldn't be initialised: %s... exiting", err),
+				UseDefaults: true,
+			})
+			if err1 != nil {
+				fmt.Println(err1)
+			}
+		}
+		log.Fatalf("The router couldn't be initialised!\n\n%s\n\nExiting!", err)
+	}
+
+	err = router.Start()
 	if err != nil {
 		if mailer != nil {
 			err1 := mailer.SendErrorFatalMail(utils.Mail{

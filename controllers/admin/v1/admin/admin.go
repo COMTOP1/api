@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/COMTOP1/api/controllers"
 	"github.com/COMTOP1/api/services/admin"
 	"github.com/COMTOP1/api/utils"
 	"github.com/couchbase/gocb/v2"
@@ -18,28 +19,28 @@ import (
 type (
 	Repo struct {
 		admin        *admin.Store
-		access       *utils.Accesser
+		controller   controllers.Controller
 		domainName   string
-        url          string
-		signingToken string
+		url          string
+		signingToken []byte
 	}
 
 	Claim struct {
 		jwt.StandardClaims
 	}
 
-    Token struct {
-        jwt.Token
-    }
+	Token struct {
+		jwt.Token
+	}
 
-//	Token struct {
-//		Raw       string                 // The raw token.  Populated when you Parse a token
-//		Method    SigningMethod          // The signing method used or to be used
-//		Header    map[string]interface{} // The first segment of the token
-//		Claims    Claims                 // The second segment of the token
-//		Signature string                 // The third segment of the token.  Populated when you Parse a token
-//		Valid     bool                   // Is the token valid?  Populated when you Parse/Verify a token
-//	}
+	//	Token struct {
+	//		Raw       string                 // The raw token.  Populated when you Parse a token
+	//		Method    SigningMethod          // The signing method used or to be used
+	//		Header    map[string]interface{} // The first segment of the token
+	//		Claims    Claims                 // The second segment of the token
+	//		Signature string                 // The third segment of the token.  Populated when you Parse a token
+	//		Valid     bool                   // Is the token valid?  Populated when you Parse/Verify a token
+	//	}
 
 	SigningMethod interface {
 		Verify(signingString, signature string, key interface{}) error // Returns nil if signature is valid
@@ -56,18 +57,18 @@ type (
 	}
 )
 
-func NewRepo(scope *gocb.Scope, access *utils.Accesser, domainName string, URL string, signingToken string) *Repo {
+func NewRepo(scope *gocb.Scope, controller controllers.Controller, domainName string, URL string, signingToken []byte) *Repo {
 	return &Repo{
 		admin:        admin.NewStore(scope),
-		access:       access,
+		controller:   controller,
 		domainName:   domainName,
-        url:          URL,
+		url:          URL,
 		signingToken: signingToken,
 	}
 }
 
 func (r *Repo) GetAdminURL() string {
-    return r.url
+	return r.url
 }
 
 func (r *Repo) GetJWT(c echo.Context) error {
@@ -83,16 +84,16 @@ func (r *Repo) GetJWT(c echo.Context) error {
 		NotBefore: timeNow.Unix(),
 	}
 	token := NewWithClaims(jwt.SigningMethodHS512, claim)
-	tokenString, err := token.SignedString([]byte(r.signingToken))
+	tokenString, err := token.SignedString(r.signingToken)
 	if err != nil {
 		err = fmt.Errorf("GetJWT failed: %w", err)
-        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
 	err = json.NewEncoder(c.Response().Writer).Encode(JWTToken{JWTToken: tokenString})
 	if err != nil {
-        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
-    return c.NoContent(http.StatusAccepted)
+	return c.NoContent(http.StatusAccepted)
 }
 
 func (r *Repo) GetSSOJWT(c echo.Context) error {
@@ -106,36 +107,36 @@ func (r *Repo) GetSSOJWT(c echo.Context) error {
 		NotBefore: timeNow,
 	}
 	token := NewWithClaims(jwt.SigningMethodHS512, claim)
-	tokenString, err := token.SignedString([]byte(r.signingToken))
+	tokenString, err := token.SignedString(r.signingToken)
 	if err != nil {
 		err = fmt.Errorf("GetJWT failed: %w", err)
-        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
-    }
-    kid := fmt.Sprintf("%v", token.Header["kid"])
-    err = r.admin.AddSSOJWT(claim, kid, c.Request().UserAgent())
-    if err != nil {
-        err = fmt.Errorf("getSSOJWT error: %w", err)
-        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
-    }
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
+	kid := fmt.Sprintf("%v", token.Header["kid"])
+	err = r.admin.AddSSOJWT(claim, kid, c.Request().UserAgent())
+	if err != nil {
+		err = fmt.Errorf("getSSOJWT error: %w", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
 	err = json.NewEncoder(c.Response().Writer).Encode(JWTToken{JWTToken: tokenString})
 	if err != nil {
-        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
 	return c.NoContent(http.StatusAccepted)
 }
 
 func (r *Repo) VerifySSO(c echo.Context) error {
-    kid, claims, err := r.access.GetAdminTokenKIDAndClaims(c.Request())
-    if err != nil {
-        err = fmt.Errorf("verifySSOJWT error: %w", err)
-        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
-    }
-    err = r.admin.VerifySSOJWT(claims, kid, c.Request().UserAgent())
-    if err != nil {
-        err = fmt.Errorf("verifySSOJWT error: %w", err)
-        return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
-    }
-    return c.NoContent(http.StatusAccepted)
+	kid, claims, err := r.controller.Access.GetAdminTokenKIDAndClaims(c.Request())
+	if err != nil {
+		err = fmt.Errorf("verifySSOJWT error: %w", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
+	err = r.admin.VerifySSOJWT(claims, kid, c.Request().UserAgent())
+	if err != nil {
+		err = fmt.Errorf("verifySSOJWT error: %w", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
+	return c.NoContent(http.StatusAccepted)
 }
 
 func NewWithClaims(method SigningMethod, claims Claims) *jwt.Token {
