@@ -12,7 +12,7 @@ type Session struct {
 }
 
 // NewSession constructs a new Session with a given url.
-func NewSession( /*apikey string*/ baseURL string) (*Session, error) {
+func NewSession(baseURL string) (*Session, error) {
 	url1, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, err
@@ -77,14 +77,14 @@ func (s *Session) getWithQueryParams(format string, queryParams map[string][]str
 	return s.do(r)
 }
 
-// putf creates, and fulfils, a PUT request for the endpoint created by
-// the given format string and parameters.
-func (s *Session) putf(format string, body bytes.Buffer, params ...interface{}) *api.Response {
-	r := api.NewRequestf(format, params...)
-	r.ReqType = api.PutReq
-	r.Body = body
-	return s.do(r)
-}
+//// putf creates, and fulfils, a PUT request for the endpoint created by
+//// the given format string and parameters.
+//func (s *Session) putf(format string, body bytes.Buffer, params ...interface{}) *api.Response {
+//	r := api.NewRequestf(format, params...)
+//	r.ReqType = api.PutReq
+//	r.Body = body
+//	return s.do(r)
+//}
 
 func (s *Session) putToken(token, endpoint string, body bytes.Buffer) *api.Response {
 	r := api.NewRequest(endpoint)
@@ -102,14 +102,23 @@ func (s *Session) post(endpoint string, formParams map[string][]string) *api.Res
 	return s.do(r)
 }
 
-// patch creates, and fulfils, a PATCH request for the given endpoint,
+// postToken creates, and fulfils, a POST request for the given endpoint,
 // using the given form parameters
-func (s *Session) patch(endpoint string, formParams map[string][]string) *api.Response {
+func (s *Session) postToken(token, endpoint string, body bytes.Buffer) *api.Response {
 	r := api.NewRequest(endpoint)
-	r.ReqType = api.PatchReq
-	r.Params = formParams
-	return s.do(r)
+	r.ReqType = api.PostReq
+	r.Body = body
+	return s.doToken(r, token)
 }
+
+//// patch creates, and fulfils, a PATCH request for the given endpoint,
+//// using the given form parameters
+//func (s *Session) patch(endpoint string, formParams map[string][]string) *api.Response {
+//	r := api.NewRequest(endpoint)
+//	r.ReqType = api.PatchReq
+//	r.Params = formParams
+//	return s.do(r)
+//}
 
 // patchToken creates, and fulfils, a PATCH request for the given endpoint,
 // using the given form parameters
@@ -120,20 +129,20 @@ func (s *Session) patchToken(token, endpoint string, body bytes.Buffer) *api.Res
 	return s.doToken(r, token)
 }
 
-// delete creates, and fulfils, a DELETE request for the given endpoint.
-func (s *Session) delete(endpoint string) *api.Response {
-	r := api.NewRequest(endpoint)
-	r.ReqType = api.DeleteReq
-	return s.do(r)
-}
+//// delete creates, and fulfils, a DELETE request for the given endpoint.
+//func (s *Session) delete(endpoint string) *api.Response {
+//	r := api.NewRequest(endpoint)
+//	r.ReqType = api.DeleteReq
+//	return s.do(r)
+//}
 
-// deleteToken creates, and fulfils, a PATCH request for the given endpoint,
-// using the given form parameters
-func (s *Session) deleteToken(token, endpoint string) *api.Response {
-	r := api.NewRequest(endpoint)
-	r.ReqType = api.DeleteReq
-	return s.doToken(r, token)
-}
+//// deleteToken creates, and fulfils, a PATCH request for the given endpoint,
+//// using the given form parameters
+//func (s *Session) deleteToken(token, endpoint string) *api.Response {
+//	r := api.NewRequest(endpoint)
+//	r.ReqType = api.DeleteReq
+//	return s.doToken(r, token)
+//}
 
 // deletefToken creates, and fulfils, a PATCH request for the given endpoint,
 // using the given form parameters
@@ -143,13 +152,13 @@ func (s *Session) deletefToken(token, endpoint string, params ...interface{}) *a
 	return s.doToken(r, token)
 }
 
-// deletef creates, and fulfils, a DELETE request for the endpoint created by
-// the given format string and parameters.
-func (s *Session) deletef(format string, params ...interface{}) *api.Response {
-	r := api.NewRequestf(format, params...)
-	r.ReqType = api.DeleteReq
-	return s.do(r)
-}
+//// deletef creates, and fulfils, a DELETE request for the endpoint created by
+//// the given format string and parameters.
+//func (s *Session) deletef(format string, params ...interface{}) *api.Response {
+//	r := api.NewRequestf(format, params...)
+//	r.ReqType = api.DeleteReq
+//	return s.do(r)
+//}
 
 // NewSessionFromKeyFile tries to open a Session with the key from an API key file.
 //func NewSessionFromKeyFile() (*Session, error) {

@@ -10,42 +10,52 @@ type WhatsOn struct {
 	Title         string `json:"title"`
 	ImageFileName string `json:"image,omitempty"`
 	Content       string `json:"content"`
-	Date          uint64 `json:"date"`
-	DateOfEvent   uint64 `json:"dateOfEvent"`
+	Date          int64  `json:"date"`
+	DateOfEvent   int64  `json:"date_of_event"`
 	Delete        bool   `json:"delete,omitempty"`
 }
 
-func (s *Session) GetWhatsOnById(id uint64) (whatsOn WhatsOn, err error) {
-	err = s.getf("public/whatsOn/%d", id).Into(&whatsOn)
-	return whatsOn, err
+func (s *Session) GetWhatsOnById(id uint64) (w WhatsOn, err error) {
+	err = s.getf("public/whatsOn/%d", id).Into(&w)
+	return w, err
 }
 
-func (s *Session) GetWhatsOnLatest() (whatsOn WhatsOn, err error) {
-	err = s.get("public/whatsOn/latest").Into(&whatsOn)
-	return whatsOn, err
+func (s *Session) GetWhatsOnLatest() (w WhatsOn, err error) {
+	err = s.get("public/whatsOn/latest").Into(&w)
+	return w, err
 }
 
-func (s *Session) ListAllWhatsOn() (whatsOn []WhatsOn, err error) {
-	err = s.get("public/whatsOn").Into(&whatsOn)
-	return whatsOn, err
+func (s *Session) ListAllWhatsOnEventPast() (w []WhatsOn, err error) {
+	err = s.get("public/whatsOn/past").Into(&w)
+	return w, err
 }
 
-func (s *Session) AddWhatsOn(whatsOn WhatsOn, token string) (whatsOns WhatsOn, err error) {
-	whatsOn1, err := json.Marshal(whatsOn)
+func (s *Session) ListAllWhatsOn() (w []WhatsOn, err error) {
+	err = s.get("public/whatsOn").Into(&w)
+	return w, err
+}
+
+func (s *Session) ListAllWhatsOnEventFuture() (w []WhatsOn, err error) {
+	err = s.get("public/whatsOn/future").Into(&w)
+	return w, err
+}
+
+func (s *Session) AddWhatsOn(whatsOn WhatsOn, token string) (w WhatsOn, err error) {
+	w1, err := json.Marshal(whatsOn)
 	if err != nil {
 		return WhatsOn{}, err
 	}
-	err = s.putToken(token, "internal/whatsOn", *bytes.NewBuffer(whatsOn1)).Into(&whatsOns)
-	return whatsOns, err
+	err = s.putToken(token, "internal/whatsOn", *bytes.NewBuffer(w1)).Into(&w)
+	return w, err
 }
 
-func (s *Session) EditWhatsOn(whatsOn WhatsOn, token string) (whatsOns WhatsOn, err error) {
-	whatsOn1, err := json.Marshal(whatsOn)
+func (s *Session) EditWhatsOn(whatsOn WhatsOn, token string) (w WhatsOn, err error) {
+	w1, err := json.Marshal(whatsOn)
 	if err != nil {
 		return WhatsOn{}, err
 	}
-	err = s.patchToken(token, "internal/whatsOn", *bytes.NewBuffer(whatsOn1)).Into(&whatsOns)
-	return whatsOns, err
+	err = s.patchToken(token, "internal/whatsOn", *bytes.NewBuffer(w1)).Into(&w)
+	return w, err
 }
 
 func (s *Session) DeleteWhatsOn(id uint64, token string) (err error) {
