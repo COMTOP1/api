@@ -143,7 +143,7 @@ func (r *Repo) GetUserByTokenFull(c echo.Context) error {
 	claims, err := r.controller.Access.GetAFCToken(c.Request())
 	if err != nil {
 		err = fmt.Errorf("GetUserByTokenFull failed to get token: %w", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+		return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: err.Error()})
 	}
 	p, err := r.users.GetUserFullById(claims.Id)
 	if err != nil {
