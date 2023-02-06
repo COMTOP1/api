@@ -190,7 +190,7 @@ func main() {
 
 	controller := controllers.GetController(access, session)
 
-	router, err := routes.New(&routes.NewRouter{
+	router := routes.New(&routes.NewRouter{
 		Port:       config.Server.Port,
 		Version:    config.Server.Version,
 		Commit:     config.Server.Commit,
@@ -201,18 +201,6 @@ func main() {
 		AFC:        afc.NewRepos(afcScope, controller),
 		Admin:      admin.NewRepo(adminScope, controller, config.Server.DomainName, config.Server.Admin.URL, []byte(config.Server.Access.SigningToken)),
 	})
-	if err != nil {
-		if mailer != nil {
-			err1 := mailer.SendErrorFatalMail(utils.Mail{
-				Error:       fmt.Errorf("the router couldn't be initialised: %s... exiting", err),
-				UseDefaults: true,
-			})
-			if err1 != nil {
-				fmt.Println(err1)
-			}
-		}
-		log.Fatalf("The router couldn't be initialised!\n\n%s\n\nExiting!", err)
-	}
 
 	err = router.Start()
 	if err != nil {
