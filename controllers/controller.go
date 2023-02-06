@@ -16,6 +16,8 @@ type ControllerInterface interface {
 	Head()    //method = HEAD processing
 	Patch()   //method = PATCH treatment
 	Options() //method = OPTIONS processing
+	Connect() //method = CONNECT processing
+	Trace()   //method = TRACE processing
 }
 
 // Controller is the base type of controllers in the 2016site architecture.
@@ -74,5 +76,19 @@ func (c *Controller) Patch(eC echo.Context) error {
 //
 // Unless overridden, controllers refuse this method.
 func (c *Controller) Options(eC echo.Context) error {
+	return eC.JSON(http.StatusMethodNotAllowed, utils.Error{Error: "Method Not Found"})
+}
+
+// Connect handles a HTTP CONNECT request.
+//
+// Unless overridden, controllers refuse this method.
+func (c *Controller) Connect(eC echo.Context) error {
+	return eC.JSON(http.StatusMethodNotAllowed, utils.Error{Error: "Method Not Found"})
+}
+
+// Trace handles a HTTP TRACE request.
+//
+// Unless overridden, controllers refuse this method.
+func (c *Controller) Trace(eC echo.Context) error {
 	return eC.JSON(http.StatusMethodNotAllowed, utils.Error{Error: "Method Not Found"})
 }

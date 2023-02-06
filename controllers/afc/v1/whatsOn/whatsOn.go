@@ -23,15 +23,15 @@ func NewRepo(scope *gocb.Scope, controller controllers.Controller) *Repo {
 	}
 }
 
-func (r *Repo) GetWhatsOnByID(c echo.Context) error {
+func (r *Repo) GetWhatsOnById(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		err = fmt.Errorf("GetWhatsOnByID failed to get id: %w", err)
+		err = fmt.Errorf("GetWhatsOnById failed to get id: %w", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
-	w, err := r.whatsOn.GetWhatsOn(id)
+	w, err := r.whatsOn.GetWhatsOnById(id)
 	if err != nil {
-		err = fmt.Errorf("GetWhatsOnByID failed to get whatson: %w", err)
+		err = fmt.Errorf("GetWhatsOnById failed to get whatsOn: %w", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
 	return c.JSON(http.StatusOK, w)
@@ -40,7 +40,16 @@ func (r *Repo) GetWhatsOnByID(c echo.Context) error {
 func (r *Repo) GetWhatsOnLatest(c echo.Context) error {
 	w, err := r.whatsOn.GetWhatsOnLatest()
 	if err != nil {
-		err = fmt.Errorf("GetWhatsOnByID failed to get whatson: %w", err)
+		err = fmt.Errorf("GetWhatsOnById failed to get whatsOn: %w", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
+	return c.JSON(http.StatusOK, w)
+}
+
+func (r *Repo) ListAllWhatsOnEventPast(c echo.Context) error {
+	w, err := r.whatsOn.ListAllWhatsOnEventPast()
+	if err != nil {
+		err = fmt.Errorf("ListAllWhatsOnEventPast failed to get all whatsOn: %w", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
 	return c.JSON(http.StatusOK, w)
@@ -55,11 +64,20 @@ func (r *Repo) ListAllWhatsOn(c echo.Context) error {
 	return c.JSON(http.StatusOK, w)
 }
 
+func (r *Repo) ListAllWhatsOnEventFuture(c echo.Context) error {
+	w, err := r.whatsOn.ListAllWhatsOnEventFuture()
+	if err != nil {
+		err = fmt.Errorf("ListAllWhatsOnEventFuture failed to get all whatsOn: %w", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
+	return c.JSON(http.StatusOK, w)
+}
+
 func (r *Repo) AddWhatsOn(c echo.Context) error {
 	var w *whatsOn.WhatsOn
-	err := c.Bind(w)
+	err := c.Bind(&w)
 	if err != nil {
-		err = fmt.Errorf("AddWhatsOn failed to get whatsOn: %w", err)
+		err = fmt.Errorf("AddWhatsOn failed to bind whatsOn: %w", err)
 		return c.JSON(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
 	err = r.whatsOn.AddWhatsOn(w)
@@ -71,7 +89,7 @@ func (r *Repo) AddWhatsOn(c echo.Context) error {
 
 func (r *Repo) EditWhatsOn(c echo.Context) error {
 	var w *whatsOn.WhatsOn
-	err := c.Bind(w)
+	err := c.Bind(&w)
 	if err != nil {
 		err = fmt.Errorf("EditWhatsOn failed to get whatsOn: %w", err)
 		return c.JSON(http.StatusInternalServerError, utils.Error{Error: err.Error()})
@@ -85,14 +103,14 @@ func (r *Repo) EditWhatsOn(c echo.Context) error {
 
 func (r *Repo) DeleteWhatsOn(c echo.Context) error {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	_, err = r.whatsOn.GetWhatsOn(id)
+	_, err = r.whatsOn.GetWhatsOnById(id)
 	if err != nil {
-		err = fmt.Errorf("DeleteUser failed to get user: %w", err)
+		err = fmt.Errorf("DeleteWhatsOn failed to get whatsOn: %w", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
 	err = r.whatsOn.DeleteWhatsOn(id)
 	if err != nil {
-		err = fmt.Errorf("DeleteUser failed to delete user: %w", err)
+		err = fmt.Errorf("DeleteWhatsOn failed to delete whatsOn: %w", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
 	return c.NoContent(http.StatusOK)

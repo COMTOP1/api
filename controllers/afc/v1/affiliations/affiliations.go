@@ -1,10 +1,14 @@
 package affiliations
 
 import (
+	"fmt"
 	"github.com/COMTOP1/api/controllers"
 	"github.com/COMTOP1/api/services/afc/affiliations"
+	"github.com/COMTOP1/api/utils"
 	"github.com/couchbase/gocb/v2"
 	"github.com/labstack/echo/v4"
+	"net/http"
+	"strconv"
 )
 
 // Repo stores our dependencies
@@ -21,6 +25,54 @@ func NewRepo(scope *gocb.Scope, controller controllers.Controller) *Repo {
 	}
 }
 
+func (r *Repo) GetAffiliationById(c echo.Context) error {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		err = fmt.Errorf("GetAffiliationById failed to get id: %p", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
+	p, err := r.affiliations.GetAffiliationById(id)
+	if err != nil {
+		err = fmt.Errorf("GetAffiliationById failed to get affiliation: %p", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
+	return c.JSON(http.StatusOK, p)
+}
+
 func (r *Repo) ListAllAffiliations(c echo.Context) error {
-	return nil
+	a, err := r.affiliations.ListAllAffiliations()
+	if err != nil {
+		err = fmt.Errorf("ListAllAffiliations failed to get all affiliation: %p", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
+	return c.JSON(http.StatusOK, a)
+}
+
+func (r *Repo) AddAffiliation(c echo.Context) error {
+	var a *affiliations.Affiliation
+	err := c.Bind(&a)
+	if err != nil {
+		err = fmt.Errorf("AddAffiliation failed to bind affiliation: %p", err)
+		return c.JSON(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
+	err = r.affiliations.AddAffiliation(a)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
+	return c.JSON(http.StatusOK, a)
+}
+
+func (r *Repo) DeleteAffiliation(c echo.Context) error {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	_, err = r.affiliations.GetAffiliationById(id)
+	if err != nil {
+		err = fmt.Errorf("DeleteAffiliation failed to get affiliation: %w", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
+	err = r.affiliations.DeleteAffiliation(id)
+	if err != nil {
+		err = fmt.Errorf("DeleteAffiliation failed to delete affiliation: %w", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
+	return c.NoContent(http.StatusOK)
 }
