@@ -24,6 +24,7 @@
     api_db_sslmode = "" # disable or enable
 
 [mail]
+    api_mail_enabled = false
     api_mail_host = ""
     api_mail_user = ""
     api_mail_pass = ""
