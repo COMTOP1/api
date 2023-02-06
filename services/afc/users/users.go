@@ -3,16 +3,20 @@ package users
 import (
 	"fmt"
 	"github.com/couchbase/gocb/v2"
+	"strconv"
 	"strings"
 )
 
 type (
 	// UserRepo defines all user interactions
 	UserRepo interface {
-		GetUser(email string) (User, error)
-		GetUserFull(email string) (UserFull, error)
+		GetUserByEmail(email string) (User, error)
+		GetUserById(id uint64) (User, error)
+		GetUserByEmailFull(email string) (UserFull, error)
+		GetUserByIdFull(id uint64) (UserFull, error)
 		ListAllUsers() ([]User, error)
 		ListContactUsers() ([]User, error)
+		ListTeamManagersUsers(teamId uint64) ([]User, error)
 		AddUser(user *UserFull) error
 		EditUser(user *UserFull) error
 		DeleteUser(email string) error
@@ -25,17 +29,17 @@ type (
 
 	//User represents a user object to be used when not all data is required
 	User struct {
-		Id    uint64 `json:"id,omitempty"`
+		Id    uint64 `json:"id"`
 		Email string `json:"email"`
 		Name  string `json:"name"`
 		Phone string `json:"phone,omitempty"`
-		Team  string `json:"team,omitempty"`
+		Team  uint64 `json:"team,omitempty"`
 		Role  string `json:"role"`
 		Image string `json:"image,omitempty"`
 	}
 	// UserFull represents a user and all columns
 	UserFull struct {
-		User      `json:"user"`
+		User
 		Password  string  `json:"password,omitempty"`
 		Temp      string  `json:"temp,omitempty"`
 		Hash      []uint8 `json:"hash,omitempty"`
@@ -55,12 +59,49 @@ func NewStore(scope *gocb.Scope) *Store {
 	return &Store{scope: scope}
 }
 
-// GetUser returns basic user information to be used for other services.
-func (m *Store) GetUser(email string) (u User, err error) {
-	result, err := m.scope.Collection("users").Get("user:"+email, nil)
+// GetUserByEmail returns basic user information to be used for other services.
+func (m *Store) GetUserByEmail(email string) (u User, err error) {
+	result, err := m.scope.Query("SELECT `id` FROM users WHERE `email` = $1", &gocb.QueryOptions{
+		Adhoc:                true,
+		PositionalParameters: []interface{}{email},
+	})
+	if err != nil {
+		if !strings.Contains(err.Error(), "document not found") {
+			return User{}, fmt.Errorf("failed to get user in get user by email: %w", err)
+		}
+	}
+	if result.Next() {
+		var d UserFull
+		err := result.Row(&d)
+		if err != nil {
+			return User{}, err
+		}
+		return m.GetUserById(d.Id)
+	} else {
+		return User{}, fmt.Errorf("failed to get user by email: %s", email)
+	}
+	//result1, err := m.scope.Collection("users").Get("user:"+email, &gocb.GetOptions{})
+	//if err != nil {
+	//	if strings.Contains(err.Error(), "document not found") {
+	//		return User{}, fmt.Errorf("user doesn't exist: %s", email)
+	//	} else {
+	//		return User{}, fmt.Errorf("failed to get user: %w", err)
+	//	}
+	//}
+	//
+	//err = result1.Content(&u)
+	//if err != nil {
+	//	return User{}, fmt.Errorf("failed to get user: %w", err)
+	//}
+	//return u, err
+}
+
+// GetUserByEmail returns basic user information to be used for other services.
+func (m *Store) GetUserById(id uint64) (u User, err error) {
+	result, err := m.scope.Collection("users").Get("user:"+strconv.FormatUint(id, 10), &gocb.GetOptions{})
 	if err != nil {
 		if strings.Contains(err.Error(), "document not found") {
-			return User{}, fmt.Errorf("user doesn't exist: %s", email)
+			return User{}, fmt.Errorf("user doesn't exist: %d", id)
 		} else {
 			return User{}, fmt.Errorf("failed to get user: %w", err)
 		}
@@ -70,53 +111,51 @@ func (m *Store) GetUser(email string) (u User, err error) {
 	if err != nil {
 		return User{}, fmt.Errorf("failed to get user: %w", err)
 	}
-	return u, nil
+	return u, err
 }
 
-// GetUserFull will return all user information to be used for profile and management.
-func (m *Store) GetUserFull(email string) (u UserFull, err error) {
-	result, err := m.scope.Collection("users").Get("user:"+email, nil)
+// GetUserFullByEmail will return all user information to be used for profile and management.
+func (m *Store) GetUserFullByEmail(email string) (u UserFull, err error) {
+	result, err := m.scope.Collection("users").Get("user:"+email, &gocb.GetOptions{})
 	if err != nil {
 		if strings.Contains(err.Error(), "document not found") {
 			return UserFull{}, fmt.Errorf("user doesn't exist: %s", email)
 		} else {
-			return UserFull{}, fmt.Errorf("failed to get user: %w", err)
+			return UserFull{}, fmt.Errorf("failed to get user full: %w", err)
 		}
 	}
 
 	err = result.Content(&u)
 	if err != nil {
-		return UserFull{}, fmt.Errorf("failed to get user: %w", err)
+		return UserFull{}, fmt.Errorf("failed to get user full: %w", err)
 	}
-	return u, nil
+	return u, err
+}
+
+// GetUserFullByEmail will return all user information to be used for profile and management.
+func (m *Store) GetUserFullById(id uint64) (u UserFull, err error) {
+	result, err := m.scope.Collection("users").Get("user:"+strconv.FormatUint(id, 10), &gocb.GetOptions{})
+	if err != nil {
+		if strings.Contains(err.Error(), "document not found") {
+			return UserFull{}, fmt.Errorf("user doesn't exist: %d", id)
+		} else {
+			return UserFull{}, fmt.Errorf("failed to get user full: %w", err)
+		}
+	}
+
+	err = result.Content(&u)
+	if err != nil {
+		return UserFull{}, fmt.Errorf("failed to get user full: %w", err)
+	}
+	return u, err
 }
 
 // ListAllUsers returns all users
 // It doesn't return the full User object
 func (m *Store) ListAllUsers() (u []User, err error) {
-	query, err := m.scope.Query("SELECT `email`, `name`, `phone`, `team`, `role`, `image` FROM users ", &gocb.QueryOptions{})
+	query, err := m.scope.Query("SELECT `id`, `email`, `name`, `phone`, `team`, `role`, `image` FROM users ORDER BY `id` ", &gocb.QueryOptions{})
 	if err != nil {
-		return nil, err
-	}
-	for query.Next() {
-		var result User
-		err := query.Row(&result)
-		if err != nil {
-			return []User{}, fmt.Errorf("failed to get users: %w", err)
-		}
-		u = append(u, result)
-	}
-
-	if err := query.Err(); err != nil {
-		return []User{}, fmt.Errorf("failed to get users: %w", err)
-	}
-	return u, nil
-}
-
-func (m *Store) ListContactUsers() (u []User, err error) {
-	query, err := m.scope.Query("SELECT `email`, `name`, `role` FROM users WHERE `role`='ProgrammeEditor' OR `role`='LeagueSecretary' OR `role`='Treasurer' OR `role`='SafeguardingOfficer' OR `role`='ClubSecretary' OR `role`='Chairperson' ORDER BY CASE `role` WHEN 'ProgrammeEditor' THEN 1 WHEN 'LeagueSecretary' THEN 2 WHEN 'Treasurer' THEN 3 WHEN 'SafeguardingOfficer' THEN 4 WHEN 'ClubSecretary' THEN 5 WHEN 'Chairperson' THEN 6 ELSE 0 END DESC", &gocb.QueryOptions{})
-	if err != nil {
-		return nil, err
+		return []User{}, fmt.Errorf("failed to get all users: %w", err)
 	}
 	for query.Next() {
 		var result User
@@ -130,7 +169,50 @@ func (m *Store) ListContactUsers() (u []User, err error) {
 	if err := query.Err(); err != nil {
 		return []User{}, fmt.Errorf("failed to get all users: %w", err)
 	}
-	return u, nil
+	return u, err
+}
+
+func (m *Store) ListContactUsers() (u []User, err error) {
+	query, err := m.scope.Query("SELECT `email`, `name`, `role` FROM users WHERE `role`='ProgrammeEditor' OR `role`='LeagueSecretary' OR `role`='Treasurer' OR `role`='SafeguardingOfficer' OR `role`='ClubSecretary' OR `role`='Chairperson' ORDER BY CASE `role` WHEN 'ProgrammeEditor' THEN 1 WHEN 'LeagueSecretary' THEN 2 WHEN 'Treasurer' THEN 3 WHEN 'SafeguardingOfficer' THEN 4 WHEN 'ClubSecretary' THEN 5 WHEN 'Chairperson' THEN 6 ELSE 0 END DESC", &gocb.QueryOptions{})
+	if err != nil {
+		return []User{}, fmt.Errorf("failed to get contact users: %w", err)
+	}
+	for query.Next() {
+		var result User
+		err := query.Row(&result)
+		if err != nil {
+			return []User{}, fmt.Errorf("failed to get contact users: %w", err)
+		}
+		u = append(u, result)
+	}
+
+	if err := query.Err(); err != nil {
+		return []User{}, fmt.Errorf("failed to get contact users: %w", err)
+	}
+	return u, err
+}
+
+func (m *Store) ListTeamManagersUsers(teamId uint64) (u []User, err error) {
+	query, err := m.scope.Query("SELECT `email`, `name`, `role` FROM users WHERE `role`='Manager' AND `team` = $1", &gocb.QueryOptions{
+		PositionalParameters: []interface{}{teamId},
+		Adhoc:                true,
+	})
+	if err != nil {
+		return []User{}, fmt.Errorf("failed to get team managers users: %w", err)
+	}
+	for query.Next() {
+		var result User
+		err := query.Row(&result)
+		if err != nil {
+			return []User{}, fmt.Errorf("failed to get team managers users: %w", err)
+		}
+		u = append(u, result)
+	}
+
+	if err := query.Err(); err != nil {
+		return []User{}, fmt.Errorf("failed to get team managers users: %w", err)
+	}
+	return u, err
 }
 
 func (m *Store) AddUser(u *UserFull) error {
@@ -140,18 +222,17 @@ func (m *Store) AddUser(u *UserFull) error {
 	})
 	if err != nil {
 		if !strings.Contains(err.Error(), "document not found") {
-			return fmt.Errorf("failed to get user: %w", err)
+			return fmt.Errorf("failed to get user in add user: %w", err)
 		}
 	}
 	for result.Next() {
 		return fmt.Errorf("email already exists")
 	}
-	mut, err := m.scope.Collection("users").Insert("user:"+u.Email, u, nil)
+	_, err = m.scope.Collection("users").Insert("user:"+strconv.FormatUint(u.Id, 10), u, &gocb.InsertOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to add user: %w", err)
 	}
-	fmt.Println(mut)
-	return nil
+	return err
 }
 
 func (m *Store) EditUser(u *UserFull) error {
@@ -161,49 +242,63 @@ func (m *Store) EditUser(u *UserFull) error {
 	})
 	if err != nil {
 		if !strings.Contains(err.Error(), "document not found") {
-			return fmt.Errorf("failed to get user: %w", err)
+			return fmt.Errorf("failed to get user in edit user: %w", err)
 		}
 	}
 	if result.Next() {
-		mut, err := m.scope.Collection("users").Upsert("user:"+u.Email, u, nil)
-		fmt.Println(mut)
+		_, err := m.scope.Collection("users").Upsert("user:"+u.Email, u, &gocb.UpsertOptions{})
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to edit user: %w", err)
 		}
-		return nil
+		return err
 	} else {
 		return fmt.Errorf("email doesn't exists")
 	}
 }
 
-func (m *Store) DeleteUser(email string) error {
+func (m *Store) DeleteUserFromEmail(email string) error {
 	result, err := m.scope.Query("SELECT `email` FROM users WHERE `email` = $1", &gocb.QueryOptions{
 		Adhoc:                false,
 		PositionalParameters: []interface{}{email},
 	})
 	if err != nil {
 		if !strings.Contains(err.Error(), "document not found") {
-			return fmt.Errorf("failed to get user: %w", err)
+			return fmt.Errorf("failed to get user in delete user: %w", err)
 		}
 	}
 	if result.Next() {
-		mut, err := m.scope.Collection("users").Remove("user:"+email, nil)
-		fmt.Println(mut)
+		var u User
+		err = result.Row(&u)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to delete user from email: %w", err)
 		}
-		return nil
+		_, err := m.scope.Collection("users").Remove("user:"+strconv.FormatUint(u.Id, 10), &gocb.RemoveOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to delete user: %w", err)
+		}
+		return err
 	} else {
 		return fmt.Errorf("email doesn't exists")
 	}
 }
 
-/*{
-"email": "liam.burnand@bswdi.co.uk",
-"hash": "[110, 251, 168, 191, 159, 99, 214, 88, 249, 152, 116, 228, 221, 182, 124, 166, 16, 78, 228, 58, 30, 87, 190, 70, 150, 228, 194, 209, 64, 125, 141, 212, 75, 253, 1, 211, 223, 55, 172, 244, 27, 151, 157, 168, 100, 34, 167, 24, 2, 73, 165, 46, 204, 112, 108, 55, 101, 220, 7, 38, 100, 67, 2, 31]",
-"name": "Liam Burnand",
-"phone": 447426534286,
-"role": "Webmaster",
-"salt": "[86, 210, 152, 163, 212, 214, 24, 121, 105, 222, 115, 42, 86, 255, 82, 108, 191, 216, 133, 147, 11, 12, 216, 191, 57, 112, 86, 124, 34, 104, 175, 118, 30, 44, 164, 153, 57, 50, 254, 36, 168, 32, 58, 131, 139, 133, 7, 11, 6, 242, 169, 168, 75, 241, 250, 48, 44, 76, 214, 107, 42, 132, 107, 191]",
-"updated_on": "2022-08-09 13:17:46"
-}*/
+func (m *Store) DeleteUserFromId(id uint64) error {
+	result, err := m.scope.Query("SELECT `email` FROM users WHERE `id` = $1", &gocb.QueryOptions{
+		Adhoc:                false,
+		PositionalParameters: []interface{}{id},
+	})
+	if err != nil {
+		if !strings.Contains(err.Error(), "document not found") {
+			return fmt.Errorf("failed to get user in delete user: %w", err)
+		}
+	}
+	if result.Next() {
+		_, err := m.scope.Collection("users").Remove("user:"+strconv.FormatUint(id, 10), &gocb.RemoveOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to delete user: %w", err)
+		}
+		return err
+	} else {
+		return fmt.Errorf("id doesn't exists")
+	}
+}
