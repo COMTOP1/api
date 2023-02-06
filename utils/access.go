@@ -37,8 +37,8 @@ type (
 		JWTToken string `json:"jwt_token"`
 	}
 	AFCAccessClaims struct {
-		Email string `json:"email"`
-		Role  string `json:"role"`
+		Id   uint64 `json:"id"`
+		Role string `json:"role"`
 		jwt.StandardClaims
 	}
 	// AccessClaims represents an identifiable JWT
