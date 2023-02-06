@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	error2 "github.com/COMTOP1/api/handler/error"
+	"github.com/labstack/echo/v4"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -187,14 +188,16 @@ func (s *authedRequester) DoToken(r *Request, token string) *Response {
 	} else {
 		theurl.RawQuery = encodedParams
 	}
-	req, err := http.NewRequest(reqMethod, theurl.String(), bytes.NewReader(r.Body.Bytes()))
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	b := bytes.NewReader(r.Body.Bytes())
+	req, err := http.NewRequest(reqMethod, theurl.String(), b)
+	req.Header.Set(echo.HeaderAuthorization, fmt.Sprintf("Bearer %s", token))
 
 	// Specify content type for POST, PUT or PATCH requests, as the body format has to be specified
-	//if r.ReqType == PostReq || r.ReqType == PutReq || r.ReqType == PatchReq || r.ReqType == DeleteReq {
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
-	//}
+	if r.ReqType == PostReq || r.ReqType == PutReq || r.ReqType == PatchReq || r.ReqType == DeleteReq {
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		req.Header.Set(echo.HeaderAccept, echo.MIMEApplicationJSON)
+	}
 
 	if err != nil {
 		return &Response{err: err}
@@ -214,7 +217,7 @@ func (s *authedRequester) DoToken(r *Request, token string) *Response {
 	if err != nil {
 		return &Response{err: err}
 	}
-	if res.StatusCode != 200 {
+	if res.StatusCode != 200 && res.StatusCode != 204 {
 		return &Response{err: fmt.Errorf("%s Not ok: HTTP %d\n%v", r.Endpoint, res.StatusCode, error2.New(string(data)))}
 	}
 	var response struct {
@@ -224,9 +227,7 @@ func (s *authedRequester) DoToken(r *Request, token string) *Response {
 	response.Status = res.StatusCode
 	raw := json.RawMessage{}
 	response.Payload = &raw
-	fmt.Println(string(data))
 	err = response.Payload.UnmarshalJSON(data)
-	fmt.Println(err)
 	if err != nil {
 		return &Response{err: err}
 	}
