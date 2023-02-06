@@ -44,6 +44,7 @@ type (
 	}
 
 	Mail struct {
+		Enabled  bool   `toml:"api_mail_enabled"`
 		Host     string `toml:"api_mail_host"`
 		User     string `toml:"api_mail_user"`
 		Password string `toml:"api_mail_pass"`

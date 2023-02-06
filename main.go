@@ -29,29 +29,36 @@ func main() {
 
 	var mailer *utils.Mailer
 	if config.Mail.Host != "" {
-		mailConfig := utils.MailConfig{
-			Host:     config.Mail.Host,
-			Port:     config.Mail.Port,
-			Username: config.Mail.User,
-			Password: config.Mail.Password,
-		}
+		if config.Mail.Enabled {
+			mailConfig := utils.MailConfig{
+				Host:     config.Mail.Host,
+				Port:     config.Mail.Port,
+				Username: config.Mail.User,
+				Password: config.Mail.Password,
+			}
 
-		mailer, err = utils.NewMailer(mailConfig)
-		if err != nil {
-			log.Printf("failed to connect to mail server: %+v", err)
-		}
+			mailer, err = utils.NewMailer(mailConfig)
+			if err != nil {
+				log.Printf("failed to connect to mail server: %+v", err)
+				config.Mail.Enabled = false
+			} else {
+				log.Printf("Connected to mail server: %s\n", config.Mail.Host)
 
-		mailer.Defaults = utils.Defaults{
-			DefaultTo:   "root@bswdi.co.uk",
-			DefaultFrom: "BSWDI API <api@bswdi.co.uk>",
+				mailer.Defaults = utils.Defaults{
+					DefaultTo:   "root@bswdi.co.uk",
+					DefaultFrom: "BSWDI API <api@bswdi.co.uk>",
+				}
+			}
 		}
+	} else {
+		config.Mail.Enabled = false
 	}
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for sig := range c {
-			if mailer != nil {
+			if config.Mail.Enabled {
 				exitingTemplate := template.New("Exiting Template")
 				exitingTemplate = template.Must(exitingTemplate.Parse("<body>BSWDI API has been stopped!<br><br>{{if .Debug}}Exit signal: {{.Sig}}<br><br>{{end}}Version: {{.Version}}<br>Commit: {{.Commit}}</body>"))
 
@@ -93,7 +100,7 @@ func main() {
 	}
 	bucket, err := utils.NewDB(dbConfig)
 	if err != nil {
-		if mailer != nil {
+		if config.Mail.Enabled {
 			err1 := mailer.SendErrorFatalMail(utils.Mail{
 				Error:       fmt.Errorf("failed to start DB: %+v", err),
 				UseDefaults: true,
@@ -129,7 +136,7 @@ func main() {
 
 	log.Printf("API Version %s", config.Server.Version)
 
-	if mailer != nil {
+	if config.Mail.Enabled {
 
 		startingTemplate := template.New("Starting Template")
 		startingTemplate = template.Must(startingTemplate.Parse("<body>BSWDI API starting{{if .Debug}} in debug mode!<br><b>Do not run in production! Authentication is disabled!</b>{{else}}!{{end}}<br><br>Version: {{.Version}}<br>Commit: {{.Commit}}<br><br>If you don't get another email then this has started correctly.</body>"))
@@ -169,7 +176,7 @@ func main() {
 
 	session, err := handler.NewSession(config.Server.DomainName)
 	if err != nil {
-		if mailer != nil {
+		if config.Mail.Enabled {
 			err1 := mailer.SendErrorFatalMail(utils.Mail{
 				Error:       fmt.Errorf("the session couldn't be initialised: %s... exiting", err),
 				UseDefaults: true,
@@ -209,7 +216,7 @@ func main() {
 
 	err = router.Start()
 	if err != nil {
-		if mailer != nil {
+		if config.Mail.Enabled {
 			err1 := mailer.SendErrorFatalMail(utils.Mail{
 				Error:       fmt.Errorf("the web server couldn't be started: %s... exiting", err),
 				UseDefaults: true,
