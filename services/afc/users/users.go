@@ -80,20 +80,6 @@ func (m *Store) GetUserByEmail(email string) (u User, err error) {
 	} else {
 		return User{}, fmt.Errorf("failed to get user by email: %s", email)
 	}
-	//result1, err := m.scope.Collection("users").Get("user:"+email, &gocb.GetOptions{})
-	//if err != nil {
-	//	if strings.Contains(err.Error(), "document not found") {
-	//		return User{}, fmt.Errorf("user doesn't exist: %s", email)
-	//	} else {
-	//		return User{}, fmt.Errorf("failed to get user: %w", err)
-	//	}
-	//}
-	//
-	//err = result1.Content(&u)
-	//if err != nil {
-	//	return User{}, fmt.Errorf("failed to get user: %w", err)
-	//}
-	//return u, err
 }
 
 // GetUserByEmail returns basic user information to be used for other services.
@@ -116,20 +102,25 @@ func (m *Store) GetUserById(id uint64) (u User, err error) {
 
 // GetUserFullByEmail will return all user information to be used for profile and management.
 func (m *Store) GetUserFullByEmail(email string) (u UserFull, err error) {
-	result, err := m.scope.Collection("users").Get("user:"+email, &gocb.GetOptions{})
+	result, err := m.scope.Query("SELECT `id` FROM users WHERE `email` = $1", &gocb.QueryOptions{
+		Adhoc:                true,
+		PositionalParameters: []interface{}{email},
+	})
 	if err != nil {
-		if strings.Contains(err.Error(), "document not found") {
-			return UserFull{}, fmt.Errorf("user doesn't exist: %s", email)
-		} else {
-			return UserFull{}, fmt.Errorf("failed to get user full: %w", err)
+		if !strings.Contains(err.Error(), "document not found") {
+			return UserFull{}, fmt.Errorf("failed to get user in get user full by email: %w", err)
 		}
 	}
-
-	err = result.Content(&u)
-	if err != nil {
-		return UserFull{}, fmt.Errorf("failed to get user full: %w", err)
+	if result.Next() {
+		var d UserFull
+		err := result.Row(&d)
+		if err != nil {
+			return UserFull{}, err
+		}
+		return m.GetUserFullById(d.Id)
+	} else {
+		return UserFull{}, fmt.Errorf("failed to get user full by email: %s", email)
 	}
-	return u, err
 }
 
 // GetUserFullByEmail will return all user information to be used for profile and management.
