@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
+	"unicode"
 )
 
 type Repo struct {
@@ -24,7 +25,14 @@ func NewRepo(scope *gocb.Scope, controller controllers.Controller) *Repo {
 }
 
 func (r *Repo) GetDocumentById(c echo.Context) error {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	temp := c.Param("id")
+	temp1 := []rune(temp)
+	for _, r2 := range temp1 {
+		if !unicode.IsNumber(r2) {
+			return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: "id expects a positive number, the provided is not a positive number"})
+		}
+	}
+	id, err := strconv.ParseUint(temp, 10, 64)
 	if err != nil {
 		err = fmt.Errorf("GetDocumentById failed to get id: %p", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
@@ -61,7 +69,14 @@ func (r *Repo) AddDocument(c echo.Context) error {
 }
 
 func (r *Repo) DeleteDocument(c echo.Context) error {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	temp := c.Param("id")
+	temp1 := []rune(temp)
+	for _, r2 := range temp1 {
+		if !unicode.IsNumber(r2) {
+			return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: "id expects a positive number, the provided is not a positive number"})
+		}
+	}
+	id, err := strconv.ParseUint(temp, 10, 64)
 	_, err = r.documents.GetDocumentById(id)
 	if err != nil {
 		err = fmt.Errorf("DeleteDocument failed to get document: %w", err)

@@ -8,7 +8,9 @@ import (
 	"github.com/couchbase/gocb/v2"
 	"github.com/labstack/echo/v4"
 	"net/http"
+	"net/mail"
 	"strconv"
+	"unicode"
 )
 
 // Repo stores our dependencies
@@ -36,6 +38,10 @@ func NewRepo(scope *gocb.Scope, controller controllers.Controller) *Repo {
 // @Router /ea231a602d352b2bcc5a2acca6022575/v1/internal/user/email/{email} [get]
 func (r *Repo) GetUserByEmail(c echo.Context) error {
 	email := c.Param("email")
+	_, err := mail.ParseAddress(email)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: "the provided email is not in a good format"})
+	}
 	p, err := r.users.GetUserByEmail(email)
 	if err != nil {
 		err = fmt.Errorf("GetUserByEmail failed: %w", err)
@@ -54,7 +60,14 @@ func (r *Repo) GetUserByEmail(c echo.Context) error {
 // @Success 200 {object} users.User
 // @Router /ea231a602d352b2bcc5a2acca6022575/v1/internal/user/id/{id} [get]
 func (r *Repo) GetUserById(c echo.Context) error {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	temp := c.Param("id")
+	temp1 := []rune(temp)
+	for _, r2 := range temp1 {
+		if !unicode.IsNumber(r2) {
+			return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: "id expects a positive number, the provided is not a positive number"})
+		}
+	}
+	id, err := strconv.ParseUint(temp, 10, 64)
 	if err != nil {
 		err = fmt.Errorf("GetUserById failed to get id: %w", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
@@ -78,6 +91,10 @@ func (r *Repo) GetUserById(c echo.Context) error {
 // @Router /ea231a602d352b2bcc5a2acca6022575/v1/internal/user/email/{email}/full [get]
 func (r *Repo) GetUserByEmailFull(c echo.Context) error {
 	email := c.Param("email")
+	_, err := mail.ParseAddress(email)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: "the provided email is not in a good format"})
+	}
 	p, err := r.users.GetUserFullByEmail(email)
 	if err != nil {
 		err = fmt.Errorf("GetUserByEmailFull failed to get user: %w", err)
@@ -96,7 +113,14 @@ func (r *Repo) GetUserByEmailFull(c echo.Context) error {
 // @Success 200 {object} users.User
 // @Router /ea231a602d352b2bcc5a2acca6022575/v1/internal/user/id/{id}/full [get]
 func (r *Repo) GetUserByIdFull(c echo.Context) error {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	temp := c.Param("id")
+	temp1 := []rune(temp)
+	for _, r2 := range temp1 {
+		if !unicode.IsNumber(r2) {
+			return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: "id expects a positive number, the provided is not a positive number"})
+		}
+	}
+	id, err := strconv.ParseUint(temp, 10, 64)
 	if err != nil {
 		err = fmt.Errorf("GetUserById failed to get id: %w", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
@@ -188,7 +212,14 @@ func (r *Repo) ListContactUsers(c echo.Context) error {
 }
 
 func (r *Repo) ListTeamManagersUsers(c echo.Context) error {
-	teamId, err := strconv.ParseUint(c.Param("teamId"), 10, 64)
+	temp := c.Param("teamId")
+	temp1 := []rune(temp)
+	for _, r2 := range temp1 {
+		if !unicode.IsNumber(r2) {
+			return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: "teamId expects a positive number, the provided is not a positive number"})
+		}
+	}
+	teamId, err := strconv.ParseUint(temp, 10, 64)
 	if err != nil {
 		err = fmt.Errorf("ListTeamManagersUsers failed to get teamId: %w", err)
 		return c.JSON(http.StatusBadRequest, utils.Error{Error: err.Error()})
@@ -231,7 +262,11 @@ func (r *Repo) EditUser(c echo.Context) error {
 
 func (r *Repo) DeleteUserFromEmail(c echo.Context) error {
 	email := c.Param("email")
-	_, err := r.users.GetUserFullByEmail(email)
+	_, err := mail.ParseAddress(email)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: "the provided email is not in a good format"})
+	}
+	_, err = r.users.GetUserFullByEmail(email)
 	if err != nil {
 		err = fmt.Errorf("DeleteUser failed to get user: %w", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
@@ -245,7 +280,14 @@ func (r *Repo) DeleteUserFromEmail(c echo.Context) error {
 }
 
 func (r *Repo) DeleteUserFromId(c echo.Context) error {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	temp := c.Param("id")
+	temp1 := []rune(temp)
+	for _, r2 := range temp1 {
+		if !unicode.IsNumber(r2) {
+			return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: "id expects a positive number, the provided is not a positive number"})
+		}
+	}
+	id, err := strconv.ParseUint(temp, 10, 64)
 	if err != nil {
 		return fmt.Errorf("DeleteUserFromId error: %w", err)
 	}

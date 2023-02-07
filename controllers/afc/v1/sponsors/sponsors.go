@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
+	"unicode"
 )
 
 type Repo struct {
@@ -24,7 +25,14 @@ func NewRepo(scope *gocb.Scope, controller controllers.Controller) *Repo {
 }
 
 func (r *Repo) GetSponsorById(c echo.Context) error {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	temp := c.Param("id")
+	temp1 := []rune(temp)
+	for _, r2 := range temp1 {
+		if !unicode.IsNumber(r2) {
+			return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: "id expects a positive number, the provided is not a positive number"})
+		}
+	}
+	id, err := strconv.ParseUint(temp, 10, 64)
 	if err != nil {
 		err = fmt.Errorf("GetSponsorById failed to get id: %w", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
@@ -94,7 +102,14 @@ func (r *Repo) EditSponsor(c echo.Context) error {
 }
 
 func (r *Repo) DeleteSponsor(c echo.Context) error {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	temp := c.Param("id")
+	temp1 := []rune(temp)
+	for _, r2 := range temp1 {
+		if !unicode.IsNumber(r2) {
+			return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: "id expects a positive number, the provided is not a positive number"})
+		}
+	}
+	id, err := strconv.ParseUint(temp, 10, 64)
 	_, err = r.sponsors.GetSponsorById(id)
 	if err != nil {
 		err = fmt.Errorf("DeleteSponsor failed to get sponsor: %w", err)
