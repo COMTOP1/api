@@ -23,13 +23,13 @@ type (
 	}
 
 	WhatsOn struct {
-		Id            uint64 `json:"id"`
-		Title         string `json:"title"`
-		ImageFileName string `json:"image,omitempty"`
-		Content       string `json:"content"`
-		Date          int64  `json:"date"`
-		DateOfEvent   int64  `json:"date_of_event"`
-		Delete        bool   `json:"delete,omitempty"`
+		Id          uint64 `json:"id"`
+		Title       string `json:"title"`
+		FileName    string `json:"file_name,omitempty"`
+		Content     string `json:"content"`
+		Date        int64  `json:"date"`
+		DateOfEvent int64  `json:"date_of_event"`
+		Delete      bool   `json:"delete,omitempty"`
 	}
 )
 
@@ -74,7 +74,7 @@ func (m *Store) GetWhatsOnLatest() (w WhatsOn, err error) {
 }
 
 func (m *Store) ListAllWhatsOnEventPast() (w []WhatsOn, err error) {
-	query, err := m.scope.Query("SELECT `id`, `title`, `image`, `content`, `date`, `date_of_event` FROM whats_on WHERE date_of_event < ? ORDER BY date_of_event DESC", &gocb.QueryOptions{
+	query, err := m.scope.Query("SELECT `id`, `title`, `file_name`, `content`, `date`, `date_of_event` FROM whats_on WHERE date_of_event < ? ORDER BY date_of_event DESC", &gocb.QueryOptions{
 		PositionalParameters: []interface{}{time.Now().Unix()},
 	})
 	if err != nil {
@@ -96,7 +96,7 @@ func (m *Store) ListAllWhatsOnEventPast() (w []WhatsOn, err error) {
 }
 
 func (m *Store) ListAllWhatsOn() (w []WhatsOn, err error) {
-	query, err := m.scope.Query("SELECT `id`, `title`, `image`, `content`, `date`, `date_of_event` FROM whats_on", &gocb.QueryOptions{})
+	query, err := m.scope.Query("SELECT `id`, `title`, `file_name`, `content`, `date`, `date_of_event` FROM whats_on", &gocb.QueryOptions{})
 	if err != nil {
 		return []WhatsOn{}, fmt.Errorf("failed to get all whatsOn: %w", err)
 	}
@@ -116,7 +116,7 @@ func (m *Store) ListAllWhatsOn() (w []WhatsOn, err error) {
 }
 
 func (m *Store) ListAllWhatsOnEventFuture() (w []WhatsOn, err error) {
-	query, err := m.scope.Query("SELECT `id`, `title`, `image`, `content`, `date`, `date_of_event` FROM whats_on WHERE date_of_event >= ? ORDER BY date_of_event", &gocb.QueryOptions{
+	query, err := m.scope.Query("SELECT `id`, `title`, `file_name`, `content`, `date`, `date_of_event` FROM whats_on WHERE date_of_event >= ? ORDER BY date_of_event", &gocb.QueryOptions{
 		PositionalParameters: []interface{}{time.Now().Unix()},
 	})
 	if err != nil {

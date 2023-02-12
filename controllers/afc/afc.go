@@ -17,6 +17,7 @@ import (
 )
 
 type Repos struct {
+	ServiceURL       string
 	Affiliations     *affiliations.Repo
 	Documents        *documents.Repo
 	Images           *images.Repo
@@ -30,8 +31,9 @@ type Repos struct {
 	WhatsOn          *whatsOn.Repo
 }
 
-func NewRepos(scope *gocb.Scope, controller controllers.Controller) *Repos {
+func NewRepos(scope *gocb.Scope, controller controllers.Controller, serviceURL string) *Repos {
 	return &Repos{
+		ServiceURL:       serviceURL,
 		Affiliations:     affiliations.NewRepo(scope, controller),
 		Documents:        documents.NewRepo(scope, controller),
 		Images:           images.NewRepo(scope, controller),

@@ -17,26 +17,41 @@ type WhatsOn struct {
 
 func (s *Session) GetWhatsOnById(id uint64) (w WhatsOn, err error) {
 	err = s.getf("public/whatsOn/%d", id).Into(&w)
+	if err != nil {
+		return WhatsOn{}, err
+	}
 	return w, err
 }
 
 func (s *Session) GetWhatsOnLatest() (w WhatsOn, err error) {
 	err = s.get("public/whatsOn/latest").Into(&w)
+	if err != nil {
+		return WhatsOn{}, err
+	}
 	return w, err
 }
 
 func (s *Session) ListAllWhatsOnEventPast() (w []WhatsOn, err error) {
 	err = s.get("public/whatsOn/past").Into(&w)
+	if err != nil {
+		return []WhatsOn{}, err
+	}
 	return w, err
 }
 
 func (s *Session) ListAllWhatsOn() (w []WhatsOn, err error) {
 	err = s.get("public/whatsOn").Into(&w)
+	if err != nil {
+		return []WhatsOn{}, err
+	}
 	return w, err
 }
 
 func (s *Session) ListAllWhatsOnEventFuture() (w []WhatsOn, err error) {
 	err = s.get("public/whatsOn/future").Into(&w)
+	if err != nil {
+		return []WhatsOn{}, err
+	}
 	return w, err
 }
 
@@ -46,6 +61,9 @@ func (s *Session) AddWhatsOn(whatsOn WhatsOn, token string) (w WhatsOn, err erro
 		return WhatsOn{}, err
 	}
 	err = s.putToken(token, "internal/whatsOn", *bytes.NewBuffer(w1)).Into(&w)
+	if err != nil {
+		return WhatsOn{}, err
+	}
 	return w, err
 }
 
@@ -55,6 +73,9 @@ func (s *Session) EditWhatsOn(whatsOn WhatsOn, token string) (w WhatsOn, err err
 		return WhatsOn{}, err
 	}
 	err = s.patchToken(token, "internal/whatsOn", *bytes.NewBuffer(w1)).Into(&w)
+	if err != nil {
+		return WhatsOn{}, err
+	}
 	return w, err
 }
 

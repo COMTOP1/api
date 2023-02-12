@@ -16,16 +16,25 @@ type Player struct {
 
 func (s *Session) GetPlayerById(id uint64) (p Player, err error) {
 	err = s.getf("public/player/%d", id).Into(&p)
+	if err != nil {
+		return Player{}, err
+	}
 	return p, err
 }
 
 func (s *Session) ListAllPlayers(token string) (p []Player, err error) {
 	err = s.getToken(token, "public/players").Into(&p)
+	if err != nil {
+		return []Player{}, err
+	}
 	return p, err
 }
 
 func (s *Session) ListAllPlayersByTeam(token string, teamId uint64) (p []Player, err error) {
 	err = s.getfToken(token, "public/players/%d", teamId).Into(&p)
+	if err != nil {
+		return []Player{}, err
+	}
 	return p, err
 }
 
@@ -35,6 +44,9 @@ func (s *Session) AddPlayer(player Player, token string) (p Player, err error) {
 		return Player{}, err
 	}
 	err = s.putToken(token, "internal/player", *bytes.NewBuffer(p1)).Into(&p)
+	if err != nil {
+		return Player{}, err
+	}
 	return p, err
 }
 
@@ -44,6 +56,9 @@ func (s *Session) EditPlayer(player Player, token string) (p Player, err error) 
 		return Player{}, err
 	}
 	err = s.patchToken(token, "internal/player", *bytes.NewBuffer(p1)).Into(&p)
+	if err != nil {
+		return Player{}, err
+	}
 	return p, err
 }
 

@@ -22,16 +22,25 @@ type Team struct {
 
 func (s *Session) GetTeamById(id uint64) (t Team, err error) {
 	err = s.getf("public/team/%d", id).Into(&t)
+	if err != nil {
+		return Team{}, err
+	}
 	return t, err
 }
 
 func (s *Session) ListAllTeams(token string) (t []Team, err error) {
 	err = s.getToken(token, "internal/teams").Into(&t)
+	if err != nil {
+		return []Team{}, err
+	}
 	return t, err
 }
 
 func (s *Session) ListActiveTeams() (t []Team, err error) {
 	err = s.get("public/teams").Into(&t)
+	if err != nil {
+		return []Team{}, err
+	}
 	return t, err
 }
 
@@ -41,6 +50,9 @@ func (s *Session) AddTeam(team Team, token string) (t Team, err error) {
 		return Team{}, err
 	}
 	err = s.putToken(token, "internal/team", *bytes.NewBuffer(t1)).Into(&t)
+	if err != nil {
+		return Team{}, err
+	}
 	return t, err
 }
 
@@ -50,6 +62,9 @@ func (s *Session) EditTeam(team Team, token string) (t Team, err error) {
 		return Team{}, err
 	}
 	err = s.patchToken(token, "internal/team", *bytes.NewBuffer(t1)).Into(&t)
+	if err != nil {
+		return Team{}, err
+	}
 	return t, err
 }
 

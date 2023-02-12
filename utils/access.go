@@ -255,7 +255,7 @@ func (a *Accesser) getAdminClaims(token string) (*jwt.Token, error) {
 	if err != nil {
 		return nil, ErrInvalidToken
 	}
-	if jwt1.Valid && claims.Issuer == "https://sso."+a.conf.DomainName && strings.Contains(claims.Audience, a.conf.DomainName) && claims.IssuedAt == claims.NotBefore && claims.ExpiresAt > time.Now().Unix() {
+	if jwt1.Valid && (claims.Issuer == "https://sso."+a.conf.DomainName || claims.Issuer == "https://api."+a.conf.DomainName) && strings.Contains(claims.Audience, a.conf.DomainName) && claims.IssuedAt == claims.NotBefore && claims.ExpiresAt > time.Now().Unix() {
 		return jwt1, nil
 	}
 	return nil, ErrInvalidToken
@@ -270,7 +270,8 @@ func (a *Accesser) getAdminClaimsKIDAndClaims(token string) (string, *jwt.Standa
 	if err != nil {
 		return "", nil, ErrInvalidToken
 	}
-	if jwt1.Valid && claims.Issuer == "https://sso."+a.conf.DomainName && strings.Contains(claims.Audience, a.conf.DomainName) && claims.IssuedAt == claims.NotBefore && claims.ExpiresAt > time.Now().Unix() {
+
+	if jwt1.Valid && claims.Issuer == "https://api."+a.conf.DomainName && strings.Contains(claims.Audience, a.conf.DomainName) && claims.IssuedAt == claims.NotBefore && claims.ExpiresAt > time.Now().Unix() {
 		return fmt.Sprintf("%v", jwt1.Header["kid"]), claims, nil
 	}
 	return "", nil, ErrInvalidToken
@@ -281,34 +282,18 @@ func (a *Accesser) AdminInitAuthMiddleware(next echo.HandlerFunc) echo.HandlerFu
 	return func(c echo.Context) error {
 		if a.FindAdminToken(c.Request()) {
 			return echo.NewHTTPError(http.StatusUnauthorized, "token already exists")
-			//return &echo.HTTPError{
-			//	Code:    http.StatusUnauthorized,
-			//	Message: "token already exists",
-			//}
 		}
 		var adminRequest *AdminRequest
 		err := json.NewDecoder(c.Request().Body).Decode(&adminRequest)
 		if err != nil {
-			return &echo.HTTPError{
-				Code:     http.StatusUnauthorized,
-				Message:  err.Error(),
-				Internal: err,
-			}
+			return echo.NewHTTPError(http.StatusUnauthorized, Error{Error: err.Error()})
 		}
 		valid := totp.Validate(adminRequest.TOTPCode, a.conf.Admin.TOTP)
 		if !valid {
-			return &echo.HTTPError{
-				Code:     http.StatusUnauthorized,
-				Message:  "totp invalid",
-				Internal: fmt.Errorf("inputed totp code is invalid"),
-			}
+			return echo.NewHTTPError(http.StatusUnauthorized, Error{Error: "totp invalid"})
 		}
 		if adminRequest.Key0 != a.conf.Admin.Key0 || adminRequest.Key1 != a.conf.Admin.Key1 || adminRequest.Key2 != a.conf.Admin.Key2 || adminRequest.Key3 != a.conf.Admin.Key3 {
-			return &echo.HTTPError{
-				Code:     http.StatusUnauthorized,
-				Message:  "key invalid",
-				Internal: fmt.Errorf("inputed admin key is invalid"),
-			}
+			return echo.NewHTTPError(http.StatusUnauthorized, Error{Error: "key invalid"})
 		}
 		return next(c)
 	}
@@ -319,11 +304,7 @@ func (a *Accesser) AdminAuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		_, err := a.GetAdminToken(c.Request())
 		if err != nil {
-			return &echo.HTTPError{
-				Code:     http.StatusUnauthorized,
-				Message:  err.Error(),
-				Internal: err,
-			}
+			return echo.NewHTTPError(http.StatusUnauthorized, Error{Error: err.Error()})
 		}
 		return next(c)
 	}
@@ -334,12 +315,7 @@ func (a *Accesser) AFCAuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		_, err := a.GetAFCToken(c.Request())
 		if err != nil {
-			//return echo.NewHTTPError(http.StatusUnauthorized, err)
-			return &echo.HTTPError{
-				Code:     http.StatusUnauthorized,
-				Message:  err.Error(),
-				Internal: err,
-			}
+			return echo.NewHTTPError(http.StatusUnauthorized, Error{Error: err.Error()})
 		}
 		return next(c)
 	}
@@ -349,21 +325,12 @@ func (a *Accesser) AFCAdminMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		token, err := a.GetAFCToken(c.Request())
 		if err != nil {
-			//return echo.NewHTTPError(http.StatusUnauthorized, err)
-			return &echo.HTTPError{
-				Code:     http.StatusUnauthorized,
-				Message:  err.Error(),
-				Internal: err,
-			}
+			return echo.NewHTTPError(http.StatusUnauthorized, Error{Error: err.Error()})
 		}
 		if token.Role == "ClubSecretary" || token.Role == "Chairperson" || token.Role == "Webmaster" {
 			return next(c)
 		}
-		return &echo.HTTPError{
-			Code:     http.StatusUnauthorized,
-			Message:  fmt.Errorf("not authenticated"),
-			Internal: fmt.Errorf("not authenticated"),
-		}
+		return echo.NewHTTPError(http.StatusUnauthorized, Error{Error: "not authenticated"})
 	}
 }
 
@@ -372,11 +339,7 @@ func (a *Accesser) AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		_, err := a.GetToken(c.Request())
 		if err != nil {
-			return &echo.HTTPError{
-				Code:     http.StatusUnauthorized,
-				Message:  err.Error(),
-				Internal: err,
-			}
+			return echo.NewHTTPError(http.StatusUnauthorized, Error{Error: err.Error()})
 		}
 		return next(c)
 	}

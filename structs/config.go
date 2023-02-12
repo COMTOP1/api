@@ -11,13 +11,14 @@ type (
 	}
 
 	Server struct {
-		Debug      bool   `toml:"api_debug"`
-		Port       string `toml:"api_port"`
-		DomainName string `toml:"api_domain_name"`
-		Version    string `toml:"api_version"`
-		Commit     string `toml:"api_commit"`
-		Access     Access `toml:"access"`
-		Admin      Admin  `toml:"admin"`
+		Debug      bool       `toml:"api_debug"`
+		Port       string     `toml:"api_port"`
+		DomainName string     `toml:"api_domain_name"`
+		Version    string     `toml:"api_version"`
+		Commit     string     `toml:"api_commit"`
+		Access     Access     `toml:"access"`
+		Admin      Admin      `toml:"admin"`
+		ServiceURL ServiceURL `toml:"service_url"`
 	}
 
 	Access struct {
@@ -49,5 +50,11 @@ type (
 		User     string `toml:"api_mail_user"`
 		Password string `toml:"api_mail_pass"`
 		Port     int    `toml:"api_mail_port"`
+	}
+
+	ServiceURL struct {
+		AFC   string `toml:"api_service_url_afc"`
+		BSWDI string `toml:"api_service_url_bswdi"`
+		SSO   string `toml:"api_service_url_sso"`
 	}
 )

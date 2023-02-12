@@ -14,11 +14,17 @@ type Affiliation struct {
 
 func (s *Session) GetAffiliationById(id uint64) (a Affiliation, err error) {
 	err = s.getf("public/affiliation/%d", id).Into(&a)
+	if err != nil {
+		return Affiliation{}, err
+	}
 	return a, err
 }
 
 func (s *Session) ListAllAffiliations() (a []Affiliation, err error) {
 	err = s.get("public/affiliations").Into(&a)
+	if err != nil {
+		return []Affiliation{}, err
+	}
 	return a, err
 }
 
@@ -28,6 +34,9 @@ func (s *Session) AddAffiliation(affiliation Affiliation, token string) (a Affil
 		return Affiliation{}, err
 	}
 	err = s.putToken(token, "internal/affiliation", *bytes.NewBuffer(a1)).Into(&a)
+	if err != nil {
+		return Affiliation{}, err
+	}
 	return a, err
 }
 

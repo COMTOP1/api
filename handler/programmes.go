@@ -15,11 +15,17 @@ type Programme struct {
 
 func (s *Session) GetProgrammeById(id uint64) (p Programme, err error) {
 	err = s.getf("public/programme/%d", id).Into(&p)
+	if err != nil {
+		return Programme{}, err
+	}
 	return p, err
 }
 
 func (s *Session) ListAllProgrammes() (p []Programme, err error) {
 	err = s.get("public/programmes").Into(&p)
+	if err != nil {
+		return []Programme{}, err
+	}
 	return p, err
 }
 
@@ -29,6 +35,9 @@ func (s *Session) AddProgramme(p1 Programme, token string) (p Programme, err err
 		return Programme{}, err
 	}
 	err = s.putToken(token, "internal/programme", *bytes.NewBuffer(p2)).Into(&p)
+	if err != nil {
+		return Programme{}, err
+	}
 	return p, err
 }
 

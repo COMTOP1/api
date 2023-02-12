@@ -89,7 +89,11 @@ func (r *Repo) GetJWT(c echo.Context) error {
 		err = fmt.Errorf("GetJWT failed: %w", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
-	err = json.NewEncoder(c.Response().Writer).Encode(JWTToken{JWTToken: tokenString})
+	b, err := json.Marshal(JWTToken{JWTToken: tokenString})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
+	_, err = c.Response().Write(b)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
@@ -97,14 +101,16 @@ func (r *Repo) GetJWT(c echo.Context) error {
 }
 
 func (r *Repo) GetSSOJWT(c echo.Context) error {
-	timeNow := time.Now().Unix()
+	timeNow := time.Now()
+	expirationTime := timeNow.Add(72 * time.Hour).Unix()
 	uuid1 := uuid.NewV4().String()
 	claim := &jwt.StandardClaims{
 		Audience:  "https://sso." + r.domainName,
 		Id:        uuid1,
-		IssuedAt:  timeNow,
+		IssuedAt:  timeNow.Unix(),
 		Issuer:    "https://api." + r.domainName,
-		NotBefore: timeNow,
+		ExpiresAt: expirationTime,
+		NotBefore: timeNow.Unix(),
 	}
 	token := NewWithClaims(jwt.SigningMethodHS512, claim)
 	tokenString, err := token.SignedString(r.signingToken)
@@ -118,7 +124,11 @@ func (r *Repo) GetSSOJWT(c echo.Context) error {
 		err = fmt.Errorf("getSSOJWT error: %w", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
-	err = json.NewEncoder(c.Response().Writer).Encode(JWTToken{JWTToken: tokenString})
+	b, err := json.Marshal(JWTToken{JWTToken: tokenString})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
+	_, err = c.Response().Write(b)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
 	}
@@ -170,12 +180,10 @@ func (t *Token) SigningString() (string, error) {
 	for i := range parts {
 		var jsonValue []byte
 		if i == 0 {
-			fmt.Println(t.Header)
 			if jsonValue, err = json.Marshal(t.Header); err != nil {
 				return "", err
 			}
 		} else {
-			fmt.Println(t.Claims)
 			if jsonValue, err = json.Marshal(t.Claims); err != nil {
 				return "", err
 			}

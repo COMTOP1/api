@@ -35,46 +35,73 @@ type (
 
 func (s *Session) GetUserByEmail(email, token string) (u User, err error) {
 	err = s.getfToken(token, "internal/user/email/%s", email).Into(&u)
+	if err != nil {
+		return User{}, err
+	}
 	return u, err
 }
 
 func (s *Session) GetUserById(id uint64, token string) (u User, err error) {
 	err = s.getfToken(token, "internal/user/id/%d", id).Into(&u)
+	if err != nil {
+		return User{}, err
+	}
 	return u, err
 }
 
 func (s *Session) GetUserByEmailFull(email, token string) (u UserFull, err error) {
 	err = s.getfToken(token, "internal/user/email/%s/full", email).Into(&u)
+	if err != nil {
+		return UserFull{}, err
+	}
 	return u, err
 }
 
 func (s *Session) GetUserByIdFull(id uint64, token string) (u UserFull, err error) {
 	err = s.getfToken(token, "internal/user/id/%d/full", id).Into(&u)
+	if err != nil {
+		return UserFull{}, err
+	}
 	return u, err
 }
 
 func (s *Session) GetUserByToken(token string) (u User, err error) {
 	err = s.getToken(token, "internal/user/").Into(&u)
+	if err != nil {
+		return User{}, err
+	}
 	return u, err
 }
 
 func (s *Session) GetUserByTokenFull(token string) (u UserFull, err error) {
 	err = s.getToken(token, "internal/user/full").Into(&u)
+	if err != nil {
+		return UserFull{}, err
+	}
 	return u, err
 }
 
 func (s *Session) ListAllUsers(token string) (u []User, err error) {
 	err = s.getToken(token, "internal/user/all").Into(&u)
+	if err != nil {
+		return []User{}, err
+	}
 	return u, err
 }
 
 func (s *Session) ListContactUsers() (u []User, err error) {
 	err = s.get("public/contacts").Into(&u)
+	if err != nil {
+		return []User{}, err
+	}
 	return u, err
 }
 
 func (s *Session) ListTeamManagersUsers(teamId uint64) (u []User, err error) {
 	err = s.getf("public/team/managers/%d", teamId).Into(&u)
+	if err != nil {
+		return []User{}, err
+	}
 	return u, err
 }
 
@@ -84,6 +111,9 @@ func (s *Session) AddUser(user UserFull, token string) (u UserFull, err error) {
 		return UserFull{}, err
 	}
 	err = s.putToken(token, "internal/user/admin", *bytes.NewBuffer(u1)).Into(&u)
+	if err != nil {
+		return UserFull{}, err
+	}
 	return u, err
 }
 
@@ -93,6 +123,9 @@ func (s *Session) EditUser(user UserFull, token string) (u UserFull, err error) 
 		return UserFull{}, err
 	}
 	err = s.patchToken(token, "internal/user/admin", *bytes.NewBuffer(u1)).Into(&u)
+	if err != nil {
+		return UserFull{}, err
+	}
 	return u, err
 }
 

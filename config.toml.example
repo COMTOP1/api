@@ -4,10 +4,10 @@
     api_domain_name = ""
     api_version = ""
     api_commit = ""
-    [access]
+    [server.access]
         api_access_cookie_name = ""
         api_signing_token = ""
-    [admin]
+    [server.admin]
         api_admin_access_cookie_name = ""
         api_admin_key_0 = ""
         api_admin_key_1 = ""
@@ -15,6 +15,10 @@
         api_admin_key_3 = ""
         api_admin_totp = ""
         api_admin_url = ""
+    [server.service_url]
+        api_service_url_afc = "/[subfolder]"
+        api_service_url_bswdi = "/[subfolder]"
+        api_service_url_sso = "/[subfolder]"
 
 [database]
     api_db_host = ""

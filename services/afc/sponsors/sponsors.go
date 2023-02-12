@@ -23,12 +23,12 @@ type (
 	}
 
 	Sponsor struct {
-		Id      uint64 `json:"id"`
-		Name    string `json:"name"`
-		Website string `json:"website"`
-		Image   string `json:"image,omitempty"`
-		Purpose string `json:"purpose,omitempty"`
-		Team    string `json:"team,omitempty"`
+		Id       uint64 `json:"id"`
+		Name     string `json:"name"`
+		Website  string `json:"website"`
+		FileName string `json:"file_name,omitempty"`
+		Purpose  string `json:"purpose,omitempty"`
+		Team     string `json:"team,omitempty"`
 	}
 )
 
@@ -55,7 +55,7 @@ func (m *Store) GetSponsorById(id uint64) (w Sponsor, err error) {
 }
 
 func (m *Store) ListAllSponsors() (w []Sponsor, err error) {
-	query, err := m.scope.Query("SELECT `id`, `name`, `website`, `image`, `purpose`, `team` FROM sponsors ", &gocb.QueryOptions{})
+	query, err := m.scope.Query("SELECT `id`, `name`, `website`, `file_name`, `purpose`, `team` FROM sponsors ", &gocb.QueryOptions{})
 	if err != nil {
 		return []Sponsor{}, fmt.Errorf("failed to get all sponsor: %w", err)
 	}
@@ -95,7 +95,7 @@ func (m *Store) ListAllSponsorsMinimal() (w []Sponsor, err error) {
 }
 
 func (m *Store) ListAllSponsorsByTeamId(teamId string) (w []Sponsor, err error) {
-	query, err := m.scope.Query("SELECT `id`, `name`, `website`, `image`, `purpose`, `team` FROM sponsors WHERE `team` = $1", &gocb.QueryOptions{
+	query, err := m.scope.Query("SELECT `id`, `name`, `website`, `file_name`, `purpose`, `team` FROM sponsors WHERE `team` = $1", &gocb.QueryOptions{
 		PositionalParameters: []interface{}{teamId},
 		Adhoc:                true,
 	})

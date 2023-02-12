@@ -25,7 +25,7 @@ func New(e *echo.Echo, domainName string) {
 	}
 
 	e.Pre(echoMw.RemoveTrailingSlash())
-	e.Use(echoMw.Logger())
+	//e.Use(echoMw.Logger())
 	e.Use(echoMw.Recover())
 	e.Use(echoMw.CORSWithConfig(config))
 }

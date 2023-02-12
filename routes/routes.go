@@ -3,6 +3,8 @@ package routes
 import (
 	"fmt"
 	"github.com/COMTOP1/api/controllers/afc"
+	"github.com/COMTOP1/api/controllers/bswdi"
+	"github.com/COMTOP1/api/controllers/sso"
 	"net/http"
 	"time"
 
@@ -22,6 +24,8 @@ type (
 		mailer  *utils.Mailer
 		afc     *afc.Repos
 		admin   *adminPackage.Repo
+		bswdi   *bswdi.Repos
+		sso     *sso.Repos
 	}
 
 	NewRouter struct {
@@ -34,6 +38,8 @@ type (
 		Mailer     *utils.Mailer
 		AFC        *afc.Repos
 		Admin      *adminPackage.Repo
+		BSWDI      *bswdi.Repos
+		SSO        *sso.Repos
 	}
 )
 
@@ -47,6 +53,8 @@ func New(conf *NewRouter) *Router {
 		mailer:  conf.Mailer,
 		afc:     conf.AFC,
 		admin:   conf.Admin,
+		bswdi:   conf.BSWDI,
+		sso:     conf.SSO,
 	}
 	r.router.HideBanner = true
 
@@ -131,10 +139,12 @@ syo-'    ./sys/.     -+ys+.'                        '.+syo-'    .+yyo.     ':sys
 	r.loadAFCRoutes()
 
 	r.loadBSWDIRoutes()
+
+	r.loadSSORoutes()
 }
 
 func (r *Router) loadAdminRoutes() {
-	admin := r.router.Group("/" + r.admin.GetAdminURL())
+	admin := r.router.Group(r.admin.GetAdminURL())
 	{
 		getJWT := admin.Group("/get")
 		{
@@ -143,19 +153,19 @@ func (r *Router) loadAdminRoutes() {
 			}
 			getJWT.GET("/jwt", r.admin.GetJWT)
 		}
-		sso := admin.Group("/sso")
+		ssoGroup := admin.Group("/sso")
 		{
 			if !r.router.Debug {
-				sso.Use(r.access.AdminAuthMiddleware)
+				ssoGroup.Use(r.access.AdminAuthMiddleware)
 			}
-			sso.GET("/jwt", r.admin.GetSSOJWT)
-			sso.GET("/verify", r.admin.VerifySSO)
+			ssoGroup.GET("/jwt", r.admin.GetSSOJWT)
+			ssoGroup.GET("/verify", r.admin.VerifySSO)
 		}
 	}
 }
 
 func (r *Router) loadAFCRoutes() {
-	afcGroup := r.router.Group("/ea231a602d352b2bcc5a2acca6022575") // afc_group --> MD5
+	afcGroup := r.router.Group(r.afc.ServiceURL)
 	{
 		afcV1 := afcGroup.Group("/v1")
 		{
@@ -252,7 +262,7 @@ func (r *Router) loadAFCRoutes() {
 			}
 			public := afcV1.Group("/public")
 			{
-				public.GET("/affiliation", r.afc.Affiliations.GetAffiliationById)
+				public.GET("/affiliation/:id", r.afc.Affiliations.GetAffiliationById)
 				public.GET("/affiliations", r.afc.Affiliations.ListAllAffiliations)
 				public.GET("/contacts", r.afc.Users.ListContactUsers)
 				public.GET("/document/:id", r.afc.Documents.GetDocumentById)
@@ -298,8 +308,15 @@ func (r *Router) loadAFCRoutes() {
 }
 
 func (r *Router) loadBSWDIRoutes() {
-	bswdiGroup := r.router.Group("/722e33d4be5c82dfbf45d585679f6c43") // bswdi_group --> MD5
+	bswdiGroup := r.router.Group(r.bswdi.ServiceURL)
 	{
 		_ = bswdiGroup
+	}
+}
+
+func (r *Router) loadSSORoutes() {
+	ssoGroup := r.router.Group(r.sso.ServiceURL)
+	{
+		_ = ssoGroup
 	}
 }

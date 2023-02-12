@@ -6,6 +6,8 @@ import (
 	"github.com/COMTOP1/api/controllers"
 	"github.com/COMTOP1/api/controllers/admin/v1/admin"
 	"github.com/COMTOP1/api/controllers/afc"
+	"github.com/COMTOP1/api/controllers/bswdi"
+	"github.com/COMTOP1/api/controllers/sso"
 	"github.com/COMTOP1/api/handler"
 	"github.com/COMTOP1/api/routes"
 	"github.com/COMTOP1/api/structs"
@@ -174,6 +176,10 @@ func main() {
 
 	adminScope := bucket.Scope("admin")
 
+	bswdiScope := bucket.Scope("bswdi")
+
+	ssoScope := bucket.Scope("sso")
+
 	session, err := handler.NewSession(config.Server.DomainName)
 	if err != nil {
 		if config.Mail.Enabled {
@@ -198,8 +204,10 @@ func main() {
 		Debug:      config.Server.Debug,
 		Access:     access,
 		Mailer:     mailer,
-		AFC:        afc.NewRepos(afcScope, controller),
+		AFC:        afc.NewRepos(afcScope, controller, config.Server.ServiceURL.AFC),
 		Admin:      admin.NewRepo(adminScope, controller, config.Server.DomainName, config.Server.Admin.URL, []byte(config.Server.Access.SigningToken)),
+		BSWDI:      bswdi.NewRepo(bswdiScope, controller, config.Server.ServiceURL.BSWDI),
+		SSO:        sso.NewRepo(ssoScope, controller, config.Server.ServiceURL.SSO),
 	})
 
 	err = router.Start()

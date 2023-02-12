@@ -13,11 +13,17 @@ type Document struct {
 
 func (s *Session) GetDocumentById(id uint64) (d Document, err error) {
 	err = s.getf("public/document/%d", id).Into(&d)
+	if err != nil {
+		return Document{}, err
+	}
 	return d, err
 }
 
 func (s *Session) ListAllDocuments() (d []Document, err error) {
 	err = s.get("public/documents").Into(&d)
+	if err != nil {
+		return []Document{}, err
+	}
 	return d, err
 }
 
@@ -27,6 +33,9 @@ func (s *Session) AddDocument(document Document, token string) (d Document, err 
 		return Document{}, err
 	}
 	err = s.putToken(token, "internal/document", *bytes.NewBuffer(d1)).Into(&d)
+	if err != nil {
+		return Document{}, err
+	}
 	return d, err
 }
 
@@ -36,6 +45,9 @@ func (s *Session) EditDocument(document Document, token string) (d Document, err
 		return Document{}, err
 	}
 	err = s.patchToken(token, "internal/document", *bytes.NewBuffer(d1)).Into(&d)
+	if err != nil {
+		return Document{}, err
+	}
 	return d, err
 }
 

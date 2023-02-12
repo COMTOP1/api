@@ -13,11 +13,17 @@ type Image struct {
 
 func (s *Session) GetImageById(id uint64) (i Image, err error) {
 	err = s.getf("public/image/%d", id).Into(&i)
+	if err != nil {
+		return Image{}, err
+	}
 	return i, err
 }
 
 func (s *Session) ListAllImages() (i []Image, err error) {
 	err = s.get("public/images").Into(&i)
+	if err != nil {
+		return []Image{}, err
+	}
 	return i, err
 }
 
@@ -27,6 +33,9 @@ func (s *Session) AddImage(image Image, token string) (i Image, err error) {
 		return Image{}, err
 	}
 	err = s.putToken(token, "internal/image", *bytes.NewBuffer(i1)).Into(&i)
+	if err != nil {
+		return Image{}, err
+	}
 	return i, err
 }
 

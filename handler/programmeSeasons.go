@@ -12,11 +12,17 @@ type ProgrammeSeason struct {
 
 func (s *Session) GetProgrammeSeasonById(id uint64) (p ProgrammeSeason, err error) {
 	err = s.getf("public/programmeSeason/%d", id).Into(&p)
+	if err != nil {
+		return ProgrammeSeason{}, err
+	}
 	return p, err
 }
 
 func (s *Session) ListAllProgrammeSeasons() (p []ProgrammeSeason, err error) {
 	err = s.get("public/programmeSeasons").Into(&p)
+	if err != nil {
+		return []ProgrammeSeason{}, err
+	}
 	return p, err
 }
 
@@ -26,6 +32,9 @@ func (s *Session) AddProgrammeSeason(programmeSeason ProgrammeSeason, token stri
 		return ProgrammeSeason{}, err
 	}
 	err = s.putToken(token, "internal/programmeSeason", *bytes.NewBuffer(programmeSeason1)).Into(&p)
+	if err != nil {
+		return ProgrammeSeason{}, err
+	}
 	return p, err
 }
 
@@ -35,6 +44,9 @@ func (s *Session) EditProgrammeSeason(programmeSeason ProgrammeSeason, token str
 		return ProgrammeSeason{}, err
 	}
 	err = s.patchToken(token, "internal/programmeSeason", *bytes.NewBuffer(programmeSeason1)).Into(&p)
+	if err != nil {
+		return ProgrammeSeason{}, err
+	}
 	return p, err
 }
 
