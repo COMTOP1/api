@@ -22,18 +22,18 @@ type (
 	}
 
 	Team struct {
-		Id            uint64 `json:"id"`
-		Name          string `json:"name"`
-		League        string `json:"league,omitempty"`
-		Division      string `json:"division,omitempty"`
-		LeagueTable   string `json:"league_table,omitempty"`
-		Fixtures      string `json:"fixtures,omitempty"`
-		Coach         string `json:"coach,omitempty"`
-		Physio        string `json:"physio,omitempty"`
-		ImageFileName string `json:"image,omitempty"`
-		Active        bool   `json:"active"`
-		Youth         bool   `json:"youth"`
-		Ages          int    `json:"ages"`
+		Id          uint64 `json:"id"`
+		Name        string `json:"name"`
+		League      string `json:"league,omitempty"`
+		Division    string `json:"division,omitempty"`
+		LeagueTable string `json:"league_table,omitempty"`
+		Fixtures    string `json:"fixtures,omitempty"`
+		Coach       string `json:"coach,omitempty"`
+		Physio      string `json:"physio,omitempty"`
+		FileName    string `json:"file_name,omitempty"`
+		Active      bool   `json:"active"`
+		Youth       bool   `json:"youth"`
+		Ages        int    `json:"ages"`
 	}
 )
 
@@ -60,7 +60,7 @@ func (m *Store) GetTeamById(id uint64) (t Team, err error) {
 }
 
 func (m *Store) ListAllTeams() (t []Team, err error) {
-	query, err := m.scope.Query("SELECT `id`, `name`, `league`, `division`, `league_table`, `fixtures`, `coach`, `physio`, `image`, `active`, `youth`, `ages` FROM teams", &gocb.QueryOptions{})
+	query, err := m.scope.Query("SELECT `id`, `name`, `league`, `division`, `league_table`, `fixtures`, `coach`, `physio`, `file_name`, `active`, `youth`, `ages` FROM teams", &gocb.QueryOptions{})
 	if err != nil {
 		return []Team{}, fmt.Errorf("failed to get all teams: %w", err)
 	}
@@ -80,7 +80,7 @@ func (m *Store) ListAllTeams() (t []Team, err error) {
 }
 
 func (m *Store) ListActiveTeams() (t []Team, err error) {
-	query, err := m.scope.Query("SELECT `id`, `name`, `league`, `division`, `league_table`, `fixtures`, `coach`, `physio`, `image`, `active`, `youth`, `ages` FROM teams WHERE `active` = true", &gocb.QueryOptions{})
+	query, err := m.scope.Query("SELECT `id`, `name`, `league`, `division`, `league_table`, `fixtures`, `coach`, `physio`, `file_name`, `active`, `youth`, `ages` FROM teams WHERE `active` = true", &gocb.QueryOptions{})
 	if err != nil {
 		return []Team{}, fmt.Errorf("failed to get active teams: %w", err)
 	}

@@ -8,13 +8,13 @@ import (
 type (
 	//User represents a user object to be used when not all data is required
 	User struct {
-		Id    uint64 `json:"id"`
-		Email string `json:"email"`
-		Name  string `json:"name"`
-		Phone string `json:"phone,omitempty"`
-		Team  string `json:"team,omitempty"`
-		Role  string `json:"role"`
-		Image string `json:"image,omitempty"`
+		Id       uint64 `json:"id"`
+		Email    string `json:"email"`
+		Name     string `json:"name"`
+		Phone    string `json:"phone,omitempty"`
+		Team     string `json:"team,omitempty"`
+		Role     string `json:"role"`
+		FileName string `json:"file_name,omitempty"`
 	}
 	// UserFull represents a user and all columns
 	UserFull struct {

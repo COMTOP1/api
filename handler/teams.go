@@ -6,18 +6,18 @@ import (
 )
 
 type Team struct {
-	Id            uint64 `json:"id"`
-	Name          string `json:"name"`
-	League        string `json:"league,omitempty"`
-	Division      string `json:"division,omitempty"`
-	LeagueTable   string `json:"league_table,omitempty"`
-	Fixtures      string `json:"fixtures,omitempty"`
-	Coach         string `json:"coach,omitempty"`
-	Physio        string `json:"physio,omitempty"`
-	ImageFileName string `json:"image,omitempty"`
-	Active        bool   `json:"active"`
-	Youth         bool   `json:"youth"`
-	Ages          int    `json:"ages"`
+	Id          uint64 `json:"id"`
+	Name        string `json:"name"`
+	League      string `json:"league,omitempty"`
+	Division    string `json:"division,omitempty"`
+	LeagueTable string `json:"league_table,omitempty"`
+	Fixtures    string `json:"fixtures,omitempty"`
+	Coach       string `json:"coach,omitempty"`
+	Physio      string `json:"physio,omitempty"`
+	FileName    string `json:"file_name,omitempty"`
+	Active      bool   `json:"active"`
+	Youth       bool   `json:"youth"`
+	Ages        int    `json:"ages"`
 }
 
 func (s *Session) GetTeamById(id uint64) (t Team, err error) {

@@ -6,13 +6,13 @@ import (
 )
 
 type WhatsOn struct {
-	Id            uint64 `json:"id"`
-	Title         string `json:"title"`
-	ImageFileName string `json:"image,omitempty"`
-	Content       string `json:"content"`
-	Date          int64  `json:"date"`
-	DateOfEvent   int64  `json:"date_of_event"`
-	Delete        bool   `json:"delete,omitempty"`
+	Id          uint64 `json:"id"`
+	Title       string `json:"title"`
+	FileName    string `json:"file_name,omitempty"`
+	Content     string `json:"content"`
+	Date        int64  `json:"date"`
+	DateOfEvent int64  `json:"date_of_event"`
+	Delete      bool   `json:"delete,omitempty"`
 }
 
 func (s *Session) GetWhatsOnById(id uint64) (w WhatsOn, err error) {

@@ -29,13 +29,13 @@ type (
 
 	//User represents a user object to be used when not all data is required
 	User struct {
-		Id    uint64 `json:"id"`
-		Email string `json:"email"`
-		Name  string `json:"name"`
-		Phone string `json:"phone,omitempty"`
-		Team  uint64 `json:"team,omitempty"`
-		Role  string `json:"role"`
-		Image string `json:"image,omitempty"`
+		Id       uint64 `json:"id"`
+		Email    string `json:"email"`
+		Name     string `json:"name"`
+		Phone    string `json:"phone,omitempty"`
+		Team     uint64 `json:"team,omitempty"`
+		Role     string `json:"role"`
+		FileName string `json:"file_name,omitempty"`
 	}
 	// UserFull represents a user and all columns
 	UserFull struct {
@@ -144,7 +144,7 @@ func (m *Store) GetUserFullById(id uint64) (u UserFull, err error) {
 // ListAllUsers returns all users
 // It doesn't return the full User object
 func (m *Store) ListAllUsers() (u []User, err error) {
-	query, err := m.scope.Query("SELECT `id`, `email`, `name`, `phone`, `team`, `role`, `image` FROM users ORDER BY `id` ", &gocb.QueryOptions{})
+	query, err := m.scope.Query("SELECT `id`, `email`, `name`, `phone`, `team`, `role`, `file_name` FROM users ORDER BY `id` ", &gocb.QueryOptions{})
 	if err != nil {
 		return []User{}, fmt.Errorf("failed to get all users: %w", err)
 	}
