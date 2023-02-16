@@ -30,8 +30,8 @@ func (s *Session) ListAllPlayers(token string) (p []Player, err error) {
 	return p, err
 }
 
-func (s *Session) ListAllPlayersByTeam(token string, teamId uint64) (p []Player, err error) {
-	err = s.getfToken(token, "public/players/%d", teamId).Into(&p)
+func (s *Session) ListAllPlayersByTeam(teamId uint64) (p []Player, err error) {
+	err = s.getf("public/players/%d", teamId).Into(&p)
 	if err != nil {
 		return []Player{}, err
 	}
