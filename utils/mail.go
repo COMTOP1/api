@@ -5,20 +5,26 @@ import (
 	"crypto/tls"
 	"fmt"
 	"html/template"
+	"log"
 	"time"
 
 	mail "github.com/xhit/go-simple-mail/v2"
 )
 
 type (
-	// Mailer encapsulates the dependency
+	// Mailer is the struct that is used to send mail, can only be used once connected to mailer
 	Mailer struct {
 		*mail.SMTPClient
 		Defaults Defaults
-		Enabled  bool
 	}
 
-	// Defaults allows for default recipients to be set
+	// MailerInit is the config store for the mailer, can be initialised once then connected multiple times
+	MailerInit struct {
+		SMTPServer mail.SMTPServer
+		Defaults   Defaults
+	}
+
+	// Defaults is the default values for the mailer if none are explicitly mentioned
 	Defaults struct {
 		DefaultTo   string
 		DefaultCC   []string
@@ -26,30 +32,30 @@ type (
 		DefaultFrom string
 	}
 
-	// MailConfig represents a configuration to connect to an SMTP server
-	MailConfig struct {
+	// Config represents a configuration to connect to an SMTP server
+	Config struct {
 		Host     string
 		Port     int
 		Username string
 		Password string
+		Defaults Defaults
 	}
 
 	// Mail represents an email to be sent
 	Mail struct {
-		Subject     string
-		To          string
-		Cc          []string
-		Bcc         []string
-		From        string
-		Error       error
-		UseDefaults bool
-		Tpl         *template.Template
-		TplData     interface{}
+		Subject string
+		To      string
+		Cc      []string
+		Bcc     []string
+		From    string
+		Error   error
+		Tpl     *template.Template
+		TplData interface{}
 	}
 )
 
 // NewMailer creates a new SMTP client
-func NewMailer(config MailConfig) (*Mailer, error) {
+func NewMailer(config Config) *MailerInit {
 	smtpServer := mail.SMTPServer{
 		Host:           config.Host,
 		Port:           config.Port,
@@ -59,35 +65,32 @@ func NewMailer(config MailConfig) (*Mailer, error) {
 		Authentication: mail.AuthLogin,
 		ConnectTimeout: 10 * time.Second,
 		SendTimeout:    10 * time.Second,
-		TLSConfig:      &tls.Config{InsecureSkipVerify: true},
+		TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+			ServerName: config.Host,
+		},
 	}
 
-	smtpServer.KeepAlive = true
-
-	smtpClient, err := smtpServer.Connect()
-	if err != nil {
-		return &Mailer{nil, Defaults{}, false}, err
+	return &MailerInit{
+		SMTPServer: smtpServer,
+		Defaults:   config.Defaults,
 	}
-	return &Mailer{smtpClient, Defaults{}, true}, nil
 }
 
-// AddDefaults adds the default recipients
-func (m *Mailer) AddDefaults(defaults Defaults) {
-	m.Defaults.DefaultTo = defaults.DefaultTo
-	m.Defaults.DefaultCC = defaults.DefaultCC
-	m.Defaults.DefaultBCC = defaults.DefaultBCC
-	m.Defaults.DefaultFrom = defaults.DefaultFrom
+// ConnectMailer connects to the mail server
+func (m *MailerInit) ConnectMailer() *Mailer {
+	smtpClient, err := m.SMTPServer.Connect()
+	if err != nil {
+		log.Printf("mailer failed: %+v", err)
+		return nil
+	}
+	log.Printf("connected to mailer: %s", m.SMTPServer.Host)
+	return &Mailer{smtpClient, m.Defaults}
 }
 
 // CheckSendable verifies that the email can be sent
 func (m *Mailer) CheckSendable(item Mail) error {
-	if item.UseDefaults {
-		if m.Defaults.DefaultTo == "" {
-			if item.To == "" {
-				return fmt.Errorf("field UseDefaults was used and there were no defaults and to field set")
-			}
-		}
-	} else if item.To == "" {
+	if item.To == "" {
 		return fmt.Errorf("no To field is set")
 	}
 	return nil
@@ -99,21 +102,7 @@ func (m *Mailer) SendMail(item Mail) error {
 	if err != nil {
 		return err
 	}
-	var (
-		to, from string
-		cc, bcc  []string
-	)
-	if item.UseDefaults {
-		to = m.Defaults.DefaultTo
-		cc = m.Defaults.DefaultCC
-		bcc = m.Defaults.DefaultBCC
-		from = m.Defaults.DefaultFrom
-	} else {
-		to = item.To
-		cc = item.Cc
-		bcc = item.Bcc
-		from = item.From
-	}
+	to, from, cc, bcc := m.setEmailHeader(item)
 	body := bytes.Buffer{}
 	err = item.Tpl.Execute(&body, item.TplData)
 	if err != nil {
@@ -134,88 +123,29 @@ func (m *Mailer) SendMail(item Mail) error {
 	return email.Send(m.SMTPClient)
 }
 
-// SendErrorMail sends a standard template error email
-func (m *Mailer) SendErrorMail(item Mail) error {
-	err := m.CheckSendable(item)
-	if err != nil {
-		return err
-	}
-	var (
-		to, from string
-		cc, bcc  []string
-	)
-	if item.UseDefaults {
-		to = m.Defaults.DefaultTo
-		cc = m.Defaults.DefaultCC
-		bcc = m.Defaults.DefaultBCC
-		from = m.Defaults.DefaultFrom
-	} else {
+func (m *Mailer) setEmailHeader(item Mail) (to, from string, cc, bcc []string) {
+	if len(item.To) > 0 {
 		to = item.To
-		cc = item.Cc
-		bcc = item.Bcc
-		from = item.From
+	} else {
+		to = m.Defaults.DefaultTo
 	}
-	errorTemplate := template.New("Error Template")
-	errorTemplate = template.Must(errorTemplate.Parse("An error occurred!<br><br>{{.}}<br><br>>We apologise for the inconvenience."))
-	body := bytes.Buffer{}
-	err = errorTemplate.Execute(&body, item.Error)
-	if err != nil {
-		return fmt.Errorf("failed to exec tpl: %w", err)
-	}
-	email := mail.NewMSG()
-	email.SetFrom(from).AddTo(to).SetSubject("Non-fatal error - BSWDI API")
-	if len(cc) != 0 {
-		email.AddCc(cc...)
-	}
-	if len(bcc) != 0 {
-		email.AddBcc(bcc...)
-	}
-	email.SetBody(mail.TextHTML, body.String())
-	if email.Error != nil {
-		return fmt.Errorf("failed to set mail data: %w", email.Error)
-	}
-	return email.Send(m.SMTPClient)
-}
 
-// SendErrorFatalMail sends a standard template error fatal email
-func (m *Mailer) SendErrorFatalMail(item Mail) error {
-	err := m.CheckSendable(item)
-	if err != nil {
-		return err
-	}
-	var (
-		to, from string
-		cc, bcc  []string
-	)
-	if item.UseDefaults {
-		to = m.Defaults.DefaultTo
-		cc = m.Defaults.DefaultCC
-		bcc = m.Defaults.DefaultBCC
-		from = m.Defaults.DefaultFrom
-	} else {
-		to = item.To
+	if len(item.Cc) > 0 {
 		cc = item.Cc
+	} else {
+		cc = m.Defaults.DefaultCC
+	}
+
+	if len(item.Bcc) > 0 {
 		bcc = item.Bcc
+	} else {
+		bcc = m.Defaults.DefaultBCC
+	}
+
+	if len(item.From) > 0 {
 		from = item.From
+	} else {
+		from = m.Defaults.DefaultFrom
 	}
-	errorTemplate := template.New("Fatal Error Template")
-	errorTemplate = template.Must(errorTemplate.Parse("<body><p style=\"color: red;\">A <b>FATAL ERROR</b> OCCURRED!<br><br><code>{{.}}</code></p><br><br>We apologise for the inconvenience.</body>"))
-	body := bytes.Buffer{}
-	err = errorTemplate.Execute(&body, item.Error)
-	if err != nil {
-		return fmt.Errorf("failed to exec tpl: %w", err)
-	}
-	email := mail.NewMSG()
-	email.SetFrom(from).AddTo(to).SetSubject("FATAL ERROR - BSWDI API")
-	if len(cc) != 0 {
-		email.AddCc(cc...)
-	}
-	if len(bcc) != 0 {
-		email.AddBcc(bcc...)
-	}
-	email.SetBody(mail.TextHTML, body.String())
-	if email.Error != nil {
-		return fmt.Errorf("failed to set mail data: %w", email.Error)
-	}
-	return email.Send(m.SMTPClient)
+	return
 }

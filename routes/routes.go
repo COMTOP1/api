@@ -21,7 +21,7 @@ type (
 		commit  string
 		router  *echo.Echo
 		access  *utils.Accesser
-		mailer  *utils.Mailer
+		mailer  *utils.MailerInit
 		afc     *afc.Repos
 		admin   *adminPackage.Repo
 		bswdi   *bswdi.Repos
@@ -35,7 +35,7 @@ type (
 		DomainName string
 		Debug      bool
 		Access     *utils.Accesser
-		Mailer     *utils.Mailer
+		Mailer     *utils.MailerInit
 		AFC        *afc.Repos
 		Admin      *adminPackage.Repo
 		BSWDI      *bswdi.Repos
