@@ -15,9 +15,9 @@ import (
 
 type (
 	Accesser struct {
-		conf Config
+		conf AccesserConfig
 	}
-	Config struct {
+	AccesserConfig struct {
 		AccessCookieName string
 		SigningKey       []byte
 		DomainName       string
@@ -61,7 +61,7 @@ var (
 
 // NewAccesser allows the validation of JWT tokens both as
 // headers and as cookies
-func NewAccesser(conf Config) *Accesser {
+func NewAccesser(conf AccesserConfig) *Accesser {
 	return &Accesser{
 		conf: conf,
 	}

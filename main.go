@@ -115,7 +115,7 @@ func main() {
 	}
 	log.Printf("Connected to DB: %s@%s", dbConfig.Username, dbConfig.Host)
 
-	access := utils.NewAccesser(utils.Config{
+	access := utils.NewAccesser(utils.AccesserConfig{
 		AccessCookieName: config.Server.Access.AccessCookieName, // jwt_token --> base64
 		SigningKey:       []byte(config.Server.Access.SigningToken),
 		DomainName:       config.Server.DomainName,
