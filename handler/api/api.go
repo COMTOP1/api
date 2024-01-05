@@ -10,12 +10,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	error2 "github.com/COMTOP1/api/handler/error"
-	"github.com/labstack/echo/v4"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/labstack/echo/v4"
+
+	error2 "github.com/COMTOP1/api/handler/error"
 )
 
 // Request represents an API request being built.
