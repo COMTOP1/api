@@ -26,8 +26,7 @@ func NewRepo(scope *gocb.Scope, controller controllers.Controller) *Repo {
 
 func (r *Repo) GetImageById(c echo.Context) error {
 	temp := c.Param("id")
-	temp1 := []rune(temp)
-	for _, r2 := range temp1 {
+	for _, r2 := range temp {
 		if !unicode.IsNumber(r2) {
 			return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: "id expects a positive number, the provided is not a positive number"})
 		}
@@ -70,8 +69,7 @@ func (r *Repo) AddImage(c echo.Context) error {
 
 func (r *Repo) DeleteImage(c echo.Context) error {
 	temp := c.Param("id")
-	temp1 := []rune(temp)
-	for _, r2 := range temp1 {
+	for _, r2 := range temp {
 		if !unicode.IsNumber(r2) {
 			return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: "id expects a positive number, the provided is not a positive number"})
 		}

@@ -61,8 +61,7 @@ func (r *Repo) GetUserByEmail(c echo.Context) error {
 // @Router /ea231a602d352b2bcc5a2acca6022575/v1/internal/user/id/{id} [get]
 func (r *Repo) GetUserById(c echo.Context) error {
 	temp := c.Param("id")
-	temp1 := []rune(temp)
-	for _, r2 := range temp1 {
+	for _, r2 := range temp {
 		if !unicode.IsNumber(r2) {
 			return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: "id expects a positive number, the provided is not a positive number"})
 		}
@@ -114,8 +113,7 @@ func (r *Repo) GetUserByEmailFull(c echo.Context) error {
 // @Router /ea231a602d352b2bcc5a2acca6022575/v1/internal/user/id/{id}/full [get]
 func (r *Repo) GetUserByIdFull(c echo.Context) error {
 	temp := c.Param("id")
-	temp1 := []rune(temp)
-	for _, r2 := range temp1 {
+	for _, r2 := range temp {
 		if !unicode.IsNumber(r2) {
 			return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: "id expects a positive number, the provided is not a positive number"})
 		}
@@ -213,8 +211,7 @@ func (r *Repo) ListContactUsers(c echo.Context) error {
 
 func (r *Repo) ListTeamManagersUsers(c echo.Context) error {
 	temp := c.Param("teamId")
-	temp1 := []rune(temp)
-	for _, r2 := range temp1 {
+	for _, r2 := range temp {
 		if !unicode.IsNumber(r2) {
 			return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: "teamId expects a positive number, the provided is not a positive number"})
 		}
@@ -281,8 +278,7 @@ func (r *Repo) DeleteUserFromEmail(c echo.Context) error {
 
 func (r *Repo) DeleteUserFromId(c echo.Context) error {
 	temp := c.Param("id")
-	temp1 := []rune(temp)
-	for _, r2 := range temp1 {
+	for _, r2 := range temp {
 		if !unicode.IsNumber(r2) {
 			return echo.NewHTTPError(http.StatusBadRequest, utils.Error{Error: "id expects a positive number, the provided is not a positive number"})
 		}
