@@ -46,7 +46,7 @@ func (m *Store) GetTeamById(id uint64) (t Team, err error) {
 	result, err := m.scope.Collection("teams").Get("team:"+strconv.FormatUint(id, 10), &gocb.GetOptions{})
 	if err != nil {
 		if strings.Contains(err.Error(), "document not found") {
-			return Team{}, fmt.Errorf("team doesn't exist: %s", id)
+			return Team{}, fmt.Errorf("team doesn't exist: %d", id)
 		} else {
 			return Team{}, fmt.Errorf("failed to get team: %w", err)
 		}

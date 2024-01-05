@@ -104,7 +104,7 @@ func (a *Accesser) GetAdminToken(r *http.Request) (*jwt.Token, error) {
 	if len(token) == 0 {
 		cookie, err := r.Cookie(a.conf.Admin.AdminAccessCookieName)
 		if err != nil {
-			if errors.As(http.ErrNoCookie, &err) {
+			if errors.Is(err, http.ErrNoCookie) {
 				return nil, ErrNoToken
 			}
 			return nil, fmt.Errorf("failed to get cookie: %w", err)
@@ -135,7 +135,7 @@ func (a *Accesser) GetAdminTokenKIDAndClaims(r *http.Request) (string, *jwt.Stan
 	if len(token) == 0 {
 		cookie, err := r.Cookie(a.conf.Admin.AdminAccessCookieName)
 		if err != nil {
-			if errors.As(http.ErrNoCookie, &err) {
+			if errors.Is(err, http.ErrNoCookie) {
 				return "", nil, ErrNoToken
 			}
 			return "", nil, fmt.Errorf("failed to get cookie: %w", err)
@@ -166,7 +166,7 @@ func (a *Accesser) GetAFCToken(r *http.Request) (*AFCAccessClaims, error) {
 	if len(token) == 0 {
 		cookie, err := r.Cookie(a.conf.AccessCookieName)
 		if err != nil {
-			if errors.As(http.ErrNoCookie, &err) {
+			if errors.Is(err, http.ErrNoCookie) {
 				return nil, ErrNoToken
 			}
 			return nil, fmt.Errorf("failed to get cookie: %w", err)
@@ -196,7 +196,7 @@ func (a *Accesser) GetToken(r *http.Request) (*AccessClaims, error) {
 	if len(token) == 0 {
 		cookie, err := r.Cookie(a.conf.AccessCookieName)
 		if err != nil {
-			if errors.As(http.ErrNoCookie, &err) {
+			if errors.Is(err, http.ErrNoCookie) {
 				return nil, ErrNoToken
 			}
 			return nil, fmt.Errorf("failed to get cookie: %w", err)

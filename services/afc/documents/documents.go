@@ -36,7 +36,7 @@ func (m *Store) GetDocumentById(id uint64) (d Document, err error) {
 	result, err := m.scope.Collection("documents").Get("document:"+strconv.FormatUint(id, 10), &gocb.GetOptions{})
 	if err != nil {
 		if strings.Contains(err.Error(), "document not found") {
-			return Document{}, fmt.Errorf("document doesn't exist: %s", id)
+			return Document{}, fmt.Errorf("document doesn't exist: %d", id)
 		} else {
 			return Document{}, fmt.Errorf("failed to get document: %w", err)
 		}

@@ -79,6 +79,10 @@ func (r *Repo) DeleteAffiliation(c echo.Context) error {
 		}
 	}
 	id, err := strconv.ParseUint(temp, 10, 64)
+	if err != nil {
+		err = fmt.Errorf("DeleteAffiliation failed to get id: %w", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
 	_, err = r.affiliations.GetAffiliationById(id)
 	if err != nil {
 		err = fmt.Errorf("DeleteAffiliation failed to get affiliation: %w", err)

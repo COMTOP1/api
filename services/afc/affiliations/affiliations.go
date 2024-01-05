@@ -38,7 +38,7 @@ func (m *Store) GetAffiliationById(id uint64) (p Affiliation, err error) {
 	result, err := m.scope.Collection("affiliations").Get("affiliation:"+strconv.FormatUint(id, 10), &gocb.GetOptions{})
 	if err != nil {
 		if strings.Contains(err.Error(), "document not found") {
-			return Affiliation{}, fmt.Errorf("affiliation doesn't exist: %s", id)
+			return Affiliation{}, fmt.Errorf("affiliation doesn't exist: %d", id)
 		} else {
 			return Affiliation{}, fmt.Errorf("failed to get affiliation: %w", err)
 		}

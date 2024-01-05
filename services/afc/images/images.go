@@ -35,7 +35,7 @@ func (m *Store) GetImageById(id uint64) (i Image, err error) {
 	result, err := m.scope.Collection("images").Get("image:"+strconv.FormatUint(id, 10), &gocb.GetOptions{})
 	if err != nil {
 		if strings.Contains(err.Error(), "document not found") {
-			return Image{}, fmt.Errorf("image doesn't exist: %s", id)
+			return Image{}, fmt.Errorf("image doesn't exist: %d", id)
 		} else {
 			return Image{}, fmt.Errorf("failed to get image: %w", err)
 		}

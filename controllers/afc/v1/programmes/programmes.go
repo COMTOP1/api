@@ -77,6 +77,10 @@ func (r *Repo) DeleteProgramme(c echo.Context) error {
 		}
 	}
 	id, err := strconv.ParseUint(temp, 10, 64)
+	if err != nil {
+		err = fmt.Errorf("DeleteProgramme failed to get id: %w", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
 	_, err = r.programmes.GetProgrammeById(id)
 	if err != nil {
 		err = fmt.Errorf("DeleteProgramme failed to get programme: %w", err)

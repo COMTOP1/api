@@ -35,7 +35,7 @@ func (m *Store) GetProgrammeSeasonById(id uint64) (p ProgrammeSeason, err error)
 	result, err := m.scope.Collection("programme_seasons").Get("programme_season:"+strconv.FormatUint(id, 10), &gocb.GetOptions{})
 	if err != nil {
 		if strings.Contains(err.Error(), "document not found") {
-			return ProgrammeSeason{}, fmt.Errorf("programme season doesn't exist: %s", id)
+			return ProgrammeSeason{}, fmt.Errorf("programme season doesn't exist: %d", id)
 		} else {
 			return ProgrammeSeason{}, fmt.Errorf("failed to get programme season: %w", err)
 		}

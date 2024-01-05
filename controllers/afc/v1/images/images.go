@@ -77,6 +77,10 @@ func (r *Repo) DeleteImage(c echo.Context) error {
 		}
 	}
 	id, err := strconv.ParseUint(temp, 10, 64)
+	if err != nil {
+		err = fmt.Errorf("DeleteImage failed to get id: %w", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
 	_, err = r.images.GetImageById(id)
 	if err != nil {
 		err = fmt.Errorf("DeleteImage failed to get image: %w", err)

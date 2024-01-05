@@ -100,6 +100,10 @@ func (r *Repo) DeleteTeam(c echo.Context) error {
 		}
 	}
 	id, err := strconv.ParseUint(temp, 10, 64)
+	if err != nil {
+		err = fmt.Errorf("DeleteTeam failed to get id: %w", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
 	_, err = r.teams.GetTeamById(id)
 	if err != nil {
 		err = fmt.Errorf("DeleteTeam failed to get user: %w", err)

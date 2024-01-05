@@ -91,6 +91,10 @@ func (r *Repo) DeleteProgrammeSeason(c echo.Context) error {
 		}
 	}
 	id, err := strconv.ParseUint(temp, 10, 64)
+	if err != nil {
+		err = fmt.Errorf("DeleteProgrammeSeason failed to get id: %w", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, utils.Error{Error: err.Error()})
+	}
 	_, err = r.programmeSeasons.GetProgrammeSeasonById(id)
 	if err != nil {
 		err = fmt.Errorf("DeleteProgrammeSeason failed to get programme season: %w", err)

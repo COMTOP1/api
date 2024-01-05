@@ -38,7 +38,7 @@ func (m *Store) GetProgrammeById(id uint64) (p Programme, err error) {
 	result, err := m.scope.Collection("programmes").Get("programme:"+strconv.FormatUint(id, 10), &gocb.GetOptions{})
 	if err != nil {
 		if strings.Contains(err.Error(), "document not found") {
-			return Programme{}, fmt.Errorf("programme doesn't exist: %s", id)
+			return Programme{}, fmt.Errorf("programme doesn't exist: %d", id)
 		} else {
 			return Programme{}, fmt.Errorf("failed to get programme: %w", err)
 		}

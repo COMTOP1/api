@@ -40,7 +40,7 @@ func (m *Store) GetPlayerById(id uint64) (p Player, err error) {
 	result, err := m.scope.Collection("players").Get("player:"+strconv.FormatUint(id, 10), &gocb.GetOptions{})
 	if err != nil {
 		if strings.Contains(err.Error(), "document not found") {
-			return Player{}, fmt.Errorf("player doesn't exist: %s", id)
+			return Player{}, fmt.Errorf("player doesn't exist: %d", id)
 		} else {
 			return Player{}, fmt.Errorf("failed to get player: %w", err)
 		}
