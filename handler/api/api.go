@@ -12,7 +12,7 @@ import (
 	"fmt"
 	error2 "github.com/COMTOP1/api/handler/error"
 	"github.com/labstack/echo/v4"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -213,7 +213,7 @@ func (s *authedRequester) DoToken(r *Request, token string) *Response {
 	if err != nil {
 		return &Response{err: err}
 	}
-	data, err := ioutil.ReadAll(res.Body)
+	data, err := io.ReadAll(res.Body)
 	if err != nil {
 		return &Response{err: err}
 	}
@@ -286,7 +286,7 @@ func (s *authedRequester) Do(r *Request) *Response {
 	if err != nil {
 		return &Response{err: err}
 	}
-	data, err := ioutil.ReadAll(res.Body)
+	data, err := io.ReadAll(res.Body)
 	if err != nil {
 		return &Response{err: err}
 	}
