@@ -4,16 +4,18 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/COMTOP1/api/controllers"
-	"github.com/COMTOP1/api/services/admin"
-	"github.com/COMTOP1/api/utils"
-	"github.com/couchbase/gocb/v2"
-	"github.com/golang-jwt/jwt"
-	"github.com/labstack/echo/v4"
-	uuid "github.com/satori/go.uuid"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/couchbase/gocb/v2"
+	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
+
+	"github.com/COMTOP1/api/controllers"
+	"github.com/COMTOP1/api/services/admin"
+	"github.com/COMTOP1/api/utils"
 )
 
 type (
@@ -74,7 +76,7 @@ func (r *Repo) GetAdminURL() string {
 func (r *Repo) GetJWT(c echo.Context) error {
 	timeNow := time.Now()
 	expirationTime := timeNow.Add(2 * time.Minute).Unix()
-	uuid1 := uuid.NewV4()
+	uuid1 := uuid.New()
 	claim := &jwt.StandardClaims{
 		Audience:  "https://api." + r.domainName,
 		ExpiresAt: expirationTime,
@@ -103,7 +105,7 @@ func (r *Repo) GetJWT(c echo.Context) error {
 func (r *Repo) GetSSOJWT(c echo.Context) error {
 	timeNow := time.Now()
 	expirationTime := timeNow.Add(72 * time.Hour).Unix()
-	uuid1 := uuid.NewV4().String()
+	uuid1 := uuid.New().String()
 	claim := &jwt.StandardClaims{
 		Audience:  "https://sso." + r.domainName,
 		Id:        uuid1,
@@ -150,7 +152,7 @@ func (r *Repo) VerifySSO(c echo.Context) error {
 }
 
 func NewWithClaims(method SigningMethod, claims Claims) *jwt.Token {
-	uuid1 := uuid.NewV4()
+	uuid1 := uuid.New()
 	return &jwt.Token{
 		Header: map[string]interface{}{
 			"typ": "JWT",
