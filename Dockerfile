@@ -1,4 +1,4 @@
-FROM localhost:5000/golang1.18.8-alpine3.16
+FROM golang1.21.5-alpine3.19 AS BUILD
 
 LABEL site="api"
 LABEL stage="builder"
