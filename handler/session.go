@@ -71,6 +71,7 @@ func (s *Session) getf(format string, params ...interface{}) *api.Response {
 	return s.do(api.NewRequestf(format, params...))
 }
 
+//nolint:unused
 func (s *Session) getWithQueryParams(format string, queryParams map[string][]string) *api.Response {
 	r := api.NewRequest(format)
 	r.Params = queryParams
@@ -95,6 +96,8 @@ func (s *Session) putToken(token, endpoint string, body bytes.Buffer) *api.Respo
 
 // post creates, and fulfils, a POST request for the given endpoint,
 // using the given form parameters
+//
+//nolint:unused
 func (s *Session) post(endpoint string, formParams map[string][]string) *api.Response {
 	r := api.NewRequest(endpoint)
 	r.ReqType = api.PostReq
@@ -104,6 +107,8 @@ func (s *Session) post(endpoint string, formParams map[string][]string) *api.Res
 
 // postToken creates, and fulfils, a POST request for the given endpoint,
 // using the given form parameters
+//
+//nolint:unused
 func (s *Session) postToken(token, endpoint string, body bytes.Buffer) *api.Response {
 	r := api.NewRequest(endpoint)
 	r.ReqType = api.PostReq
