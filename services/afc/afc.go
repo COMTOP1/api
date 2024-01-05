@@ -55,7 +55,9 @@ type (
 		whatsOn.Repo
 	}
 
+	//nolint:unused
 	Store struct {
+		//nolint:unused
 		scope *gocb.Scope
 	}
 )
