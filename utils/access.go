@@ -125,7 +125,7 @@ func (a *Accesser) GetAdminToken(r *http.Request) (*jwt.Token, error) {
 	return a.getAdminClaims(token)
 }
 
-// GetAdminToken will return the claims from an admin access token JWT
+// GetAdminTokenKIDAndClaims will return the claims from an admin access token JWT
 //
 // First will check the Authorization header, if unset will
 // check the access cookie
