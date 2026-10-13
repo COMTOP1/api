@@ -1,4 +1,4 @@
-FROM golang1.21.5-alpine3.19 AS BUILD
+FROM golang1.27.2-alpine3.24 AS BUILD
 
 LABEL site="api"
 LABEL stage="builder"
